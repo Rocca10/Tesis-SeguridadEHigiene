@@ -1,6 +1,6 @@
 import { Ionicons } from "@expo/vector-icons";
 import { useState } from "react";
-import { ScrollView, StyleSheet, Text, View } from "react-native";
+import { Image, ScrollView, StyleSheet, Text, View } from "react-native";
 
 // Datos simulados (después los vas a traer del backend)
 const vencimientos = [
@@ -20,6 +20,11 @@ export default function DashboardScreen() {
 
   return (
     <ScrollView style={styles.container}>
+                  <Image
+                    source={require("../../assets/images/utedyc_logo.png")}
+                     style={{ width: 250, height: 250, alignSelf: "center", marginBottom: -20 }}
+                    resizeMode="contain"
+                  />
       <Text style={styles.titulo}>Centro de Formación Profesional UTEDYC</Text>
       <Text style={styles.subtitulo}>Seguridad e Higiene - Panel Principal</Text>
       

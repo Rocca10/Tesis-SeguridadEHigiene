@@ -1,33 +1,71 @@
 import { Ionicons } from "@expo/vector-icons";
-import { useState } from "react";
-import { Image, ScrollView, StyleSheet, Text, View } from "react-native";
+import { useRouter } from "expo-router";
+import { useEffect, useState } from "react";
+import { Image, ScrollView, StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import { getAlertas, getVencimientos } from "../../services/api";
 
-// Datos simulados (después los vas a traer del backend)
-const vencimientos = [
-  { id: 1, nombre: "Extintor ABC - Taller Mecánica", fecha: "2025-11-10", diasRestantes: 25 },
-  { id: 2, nombre: "Botiquín de Primeros Auxilios - Aula 3", fecha: "2025-10-20", diasRestantes: 5 },
-  { id: 3, nombre: "Señalización de Evacuación - Pasillo Principal", fecha: "2025-12-01", diasRestantes: 45 },
-];
 
-const alertas = [
-  { id: 1, tipo: "Peligro", mensaje: "Falta señal de advertencia en laboratorio de química." },
-  { id: 2, tipo: "Mantenimiento", mensaje: "Control anual de matafuegos pendiente." },
-];
 
 export default function DashboardScreen() {
-  const [dataVencimientos] = useState(vencimientos);
-  const [dataAlertas] = useState(alertas);
+
+  const router = useRouter();
+
+
+  type Vencimiento = {
+  id: number;
+  nombre: string;
+  fecha: string;
+  diasRestantes: number;
+};
+
+type Alerta = {
+  id: number;
+  tipo: string;
+  mensaje: string;
+};
+
+const [dataVencimientos, setDataVencimientos] = useState<Vencimiento[]>([]);
+const [dataAlertas, setDataAlertas] = useState<Alerta[]>([]);
+
+
+
+  // 🔹 Cargar datos desde el backend al iniciar
+  useEffect(() => {
+    const cargarDatos = async () => {
+      try {
+        const vencimientos = await getVencimientos();
+        const alertas = await getAlertas();
+        setDataVencimientos(vencimientos);
+        setDataAlertas(alertas);
+      } catch (error) {
+        console.log("❌ Error al cargar datos:", error);
+      }
+    };
+
+    cargarDatos();
+  }, []);
 
   return (
     <ScrollView style={styles.container}>
-                  <Image
-                    source={require("../../assets/images/utedyc_logo.png")}
-                     style={{ width: 250, height: 250, alignSelf: "center", marginBottom: -20 }}
-                    resizeMode="contain"
-                  />
+      <Image
+        source={require("../../assets/images/utedyc_logo.png")}
+        style={{
+          width: 250,
+          height: 250,
+          alignSelf: "center",
+          marginBottom: -20,
+          marginTop: -20,
+        }}
+        resizeMode="contain"
+      />
+
       <Text style={styles.titulo}>Centro de Formación Profesional UTEDYC</Text>
-      <Text style={styles.subtitulo}>Seguridad e Higiene - Panel Principal</Text>
-      
+      <Text style={styles.subtitulo}>
+        Seguridad e Higiene - Panel Principal
+      </Text>
+
+
+
       {/* Próximos Vencimientos */}
       <View style={styles.card}>
         <View style={styles.cardHeader}>
@@ -35,26 +73,30 @@ export default function DashboardScreen() {
           <Text style={styles.cardTitle}>Próximos Vencimientos</Text>
         </View>
 
-        {dataVencimientos.map((item) => (
-          <View key={item.id} style={styles.vencimientoItem}>
-            <View style={{ flex: 1 }}>
-              <Text style={styles.vencimientoNombre}>{item.nombre}</Text>
-              <Text style={styles.vencimientoFecha}>Vence: {item.fecha}</Text>
+        {[...dataVencimientos]
+          .sort((a, b) => a.diasRestantes - b.diasRestantes)
+          .map((item) => (
+            <View key={item.id} style={styles.vencimientoItem}>
+              <View style={{ flex: 1 }}>
+                <Text style={styles.vencimientoNombre}>{item.nombre}</Text>
+                <Text style={styles.vencimientoFecha}>
+                  Vence: {item.fecha}
+                </Text>
+              </View>
+              <Text
+                style={[
+                  styles.vencimientoDias,
+                  item.diasRestantes <= 7
+                    ? styles.vencimientoUrgente
+                    : item.diasRestantes <= 30
+                    ? styles.vencimientoProximo
+                    : styles.vencimientoOk,
+                ]}
+              >
+                {item.diasRestantes} días
+              </Text>
             </View>
-            <Text
-              style={[
-                styles.vencimientoDias,
-                item.diasRestantes <= 7
-                  ? styles.vencimientoUrgente
-                  : item.diasRestantes <= 30
-                  ? styles.vencimientoProximo
-                  : styles.vencimientoOk,
-              ]}
-            >
-              {item.diasRestantes} días
-            </Text>
-          </View>
-        ))}
+          ))}
       </View>
 
       {/* Alertas Activas */}
@@ -81,9 +123,39 @@ export default function DashboardScreen() {
         ))}
       </View>
 
-      <Text style={styles.footer}>
-        © 2025 CFP UTEDYC - Sistema de Seguridad e Higiene
-      </Text>
+              {/* Accesos directos */}
+<View style={styles.accesosContainer}>
+  <TouchableOpacity
+    style={styles.accesoItem}
+    onPress={() => router.push("/matafuegos")}
+  >
+    <Ionicons name="flame-outline" size={36} color="#E53935" />
+    <Text style={styles.accesoTexto}>Matafuegos</Text>
+  </TouchableOpacity>
+
+  <TouchableOpacity style={styles.accesoItem}>
+    <Ionicons name="medical-outline" size={36} color="#43A047" />
+    <Text style={styles.accesoTexto}>Botiquines</Text>
+  </TouchableOpacity>
+
+  <TouchableOpacity style={styles.accesoItem}>
+    <Ionicons name="exit-outline" size={36} color="#FB8C00" />
+    <Text style={styles.accesoTexto}>Señalización</Text>
+  </TouchableOpacity>
+
+  <TouchableOpacity style={styles.accesoItem}>
+    <Ionicons name="settings-outline" size={36} color="#1E88E5" />
+    <Text style={styles.accesoTexto}>Configuración</Text>
+  </TouchableOpacity>
+</View>
+
+
+
+      <View style={{ marginTop: 0, marginBottom: 50 }}>
+        <Text style={styles.footer}>
+          © 2025 CFP UTEDYC - Sistema de Seguridad e Higiene
+        </Text>
+      </View>
     </ScrollView>
   );
 }
@@ -175,4 +247,22 @@ const styles = StyleSheet.create({
     marginTop: 20,
     marginBottom: 10,
   },
+  accesosContainer: {
+  flexDirection: "row",
+  justifyContent: "space-around",
+  alignItems: "center",
+  marginBottom: 25,
+  marginTop: 10,
+},
+accesoItem: {
+  alignItems: "center",
+  justifyContent: "center",
+},
+accesoTexto: {
+  fontSize: 12,
+  color: "#333",
+  marginTop: 4,
+  fontWeight: "500",
+},
+
 });

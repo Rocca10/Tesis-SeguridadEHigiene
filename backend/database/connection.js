@@ -33,6 +33,15 @@ db.serialize(() => {
     fecha TEXT,
     diasRestantes INTEGER
   )`);
+
+  db.run(`CREATE TABLE IF NOT EXISTS botiquines (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  piso TEXT,
+  responsable TEXT,
+  elementos TEXT,
+  fechaRevision TEXT
+)`);
+
 });
 
 module.exports = db;

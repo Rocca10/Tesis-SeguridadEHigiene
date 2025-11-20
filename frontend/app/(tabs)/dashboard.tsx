@@ -152,15 +152,12 @@ useEffect(() => {
 
       {/* Accesos directos */}
       <View style={styles.accesosContainer}>
-        <TouchableOpacity
-          style={styles.accesoItem}
-          onPress={() => router.push("/matafuegos")}
-        >
+        <TouchableOpacity style={styles.accesoItem} onPress={() => router.push("/matafuegos")}>
           <Ionicons name="flame-outline" size={36} color="#E53935" />
           <Text style={styles.accesoTexto}>Matafuegos</Text>
         </TouchableOpacity>
 
-        <TouchableOpacity style={styles.accesoItem}>
+        <TouchableOpacity style={styles.accesoItem} onPress={() => router.push("/botiquines")}>
           <Ionicons name="medical-outline" size={36} color="#43A047" />
           <Text style={styles.accesoTexto}>Botiquines</Text>
         </TouchableOpacity>

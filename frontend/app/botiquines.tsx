@@ -27,14 +27,31 @@ type Botiquin = {
   fechaRevision: string;
 };
 
+// ✅ Lista fija de elementos del botiquín
+const ELEMENTOS_BOTIQUIN = [
+  "Gasas",
+  "Alcohol",
+  "Vendas",
+  "Algodón",
+  "Guantes descartables",
+  "Tijera",
+  "Esparadrapo",
+  "Termómetro",
+  "Analgésicos",
+];
+
 export default function BotiquinesScreen() {
   const [data, setData] = useState<Botiquin[]>([]);
+  const [elementosSeleccionados, setElementosSeleccionados] = useState<string[]>([]);
+  const [elementosEditSeleccionados, setElementosEditSeleccionados] = useState<string[]>([]);
+
   const [nuevo, setNuevo] = useState({
     piso: "",
     responsable: "",
     elementos: "",
     fechaRevision: "",
   });
+
   const [editando, setEditando] = useState<Botiquin | null>(null);
   const [formEdit, setFormEdit] = useState({
     piso: "",
@@ -56,18 +73,37 @@ export default function BotiquinesScreen() {
     }
   };
 
+  // ➕ Alternar selección en ALTA
+  const toggleElementoNuevo = (nombre: string) => {
+    setElementosSeleccionados((prev) => {
+      const nuevaLista = prev.includes(nombre)
+        ? prev.filter((e) => e !== nombre)
+        : [...prev, nombre];
+
+      setNuevo((x) => ({ ...x, elementos: nuevaLista.join(", ") }));
+      return nuevaLista;
+    });
+  };
+
+  // ✏️ Alternar selección en EDICIÓN
+  const toggleElementoEdit = (nombre: string) => {
+    setElementosEditSeleccionados((prev) => {
+      const nuevaLista = prev.includes(nombre)
+        ? prev.filter((e) => e !== nombre)
+        : [...prev, nombre];
+
+      setFormEdit((x) => ({ ...x, elementos: nuevaLista.join(", ") }));
+      return nuevaLista;
+    });
+  };
+
   const handleAgregar = async () => {
-    if (!nuevo.piso || !nuevo.responsable || !nuevo.elementos || !nuevo.fechaRevision)
+    if (!nuevo.piso || !nuevo.responsable || !nuevo.fechaRevision)
       return Alert.alert("⚠️", "Completa todos los campos");
 
-    await crearBotiquin({
-      piso: nuevo.piso,
-      responsable: nuevo.responsable,
-      elementos: nuevo.elementos,
-      fechaRevision: nuevo.fechaRevision,
-    });
-
+    await crearBotiquin(nuevo);
     setNuevo({ piso: "", responsable: "", elementos: "", fechaRevision: "" });
+    setElementosSeleccionados([]);
     cargarDatos();
   };
 
@@ -78,6 +114,13 @@ export default function BotiquinesScreen() {
 
   const empezarEdicion = (item: Botiquin) => {
     setEditando(item);
+
+    const array = item.elementos
+      ? item.elementos.split(",").map((x) => x.trim())
+      : [];
+
+    setElementosEditSeleccionados(array);
+
     setFormEdit({
       piso: item.piso,
       responsable: item.responsable,
@@ -124,7 +167,7 @@ export default function BotiquinesScreen() {
           </View>
         ))}
 
-        {/* Formulario de alta */}
+        {/* FORMULARIO DE ALTA */}
         <View style={styles.form}>
           <Text style={styles.formTitle}>Agregar nuevo botiquín</Text>
 
@@ -140,23 +183,38 @@ export default function BotiquinesScreen() {
             value={nuevo.responsable}
             onChangeText={(t) => setNuevo({ ...nuevo, responsable: t })}
           />
-          <TextInput
-            placeholder="Elementos (gasas, alcohol, vendas...)"
-            style={styles.input}
-            value={nuevo.elementos}
-            onChangeText={(t) => setNuevo({ ...nuevo, elementos: t })}
-          />
+
+          {/* ⭐ NUEVOS ELEMENTOS (CHIPS) */}
+          <Text style={styles.subtitulo}>Elementos del botiquín</Text>
+          <View style={styles.chipsContainer}>
+            {ELEMENTOS_BOTIQUIN.map((el) => {
+              const seleccionado = elementosSeleccionados.includes(el);
+              return (
+                <TouchableOpacity
+                  key={el}
+                  style={[styles.chip, seleccionado && styles.chipSeleccionado]}
+                  onPress={() => toggleElementoNuevo(el)}
+                >
+                  <Text style={[styles.chipText, seleccionado && styles.chipTextSeleccionado]}>
+                    {el}
+                  </Text>
+                </TouchableOpacity>
+              );
+            })}
+          </View>
+
           <TextInput
             placeholder="Fecha revisión (AAAA-MM-DD)"
             style={styles.input}
             value={nuevo.fechaRevision}
             onChangeText={(t) => setNuevo({ ...nuevo, fechaRevision: t })}
           />
+
           <Button title="➕ Agregar" onPress={handleAgregar} />
         </View>
       </ScrollView>
 
-      {/* Modal de edición */}
+      {/* MODAL DE EDICIÓN */}
       <Modal animationType="fade" transparent visible={!!editando}>
         <View style={styles.modalOverlay}>
           <View style={styles.modalBox}>
@@ -174,12 +232,26 @@ export default function BotiquinesScreen() {
               value={formEdit.responsable}
               onChangeText={(t) => setFormEdit({ ...formEdit, responsable: t })}
             />
-            <TextInput
-              placeholder="Elementos"
-              style={styles.input}
-              value={formEdit.elementos}
-              onChangeText={(t) => setFormEdit({ ...formEdit, elementos: t })}
-            />
+
+            {/* ⭐ CHIPS EN EDICIÓN */}
+            <Text style={styles.subtitulo}>Elementos del botiquín</Text>
+            <View style={styles.chipsContainer}>
+              {ELEMENTOS_BOTIQUIN.map((el) => {
+                const seleccionado = elementosEditSeleccionados.includes(el);
+                return (
+                  <TouchableOpacity
+                    key={el}
+                    style={[styles.chip, seleccionado && styles.chipSeleccionado]}
+                    onPress={() => toggleElementoEdit(el)}
+                  >
+                    <Text style={[styles.chipText, seleccionado && styles.chipTextSeleccionado]}>
+                      {el}
+                    </Text>
+                  </TouchableOpacity>
+                );
+              })}
+            </View>
+
             <TextInput
               placeholder="Fecha revisión"
               style={styles.input}
@@ -194,6 +266,7 @@ export default function BotiquinesScreen() {
               >
                 <Text style={styles.btnText}>💾 Guardar</Text>
               </TouchableOpacity>
+
               <TouchableOpacity
                 style={[styles.btn, { backgroundColor: "#E53935" }]}
                 onPress={() => setEditando(null)}
@@ -222,16 +295,52 @@ const styles = StyleSheet.create({
   cardText: { fontSize: 14, color: "#555", marginTop: 4 },
   cardFecha: { fontSize: 13, color: "#777" },
   cardButtons: { flexDirection: "row", justifyContent: "space-between", marginTop: 8 },
+
   form: { marginTop: 20, backgroundColor: "#fff", padding: 15, borderRadius: 10 },
   formTitle: { fontSize: 16, fontWeight: "bold", color: "#43A047", marginBottom: 10 },
-  input: { borderWidth: 1, borderColor: "#ccc", borderRadius: 5, padding: 8, marginBottom: 10 },
+
+  subtitulo: { fontWeight: "600", marginBottom: 6 },
+
+  input: {
+    borderWidth: 1,
+    borderColor: "#ccc",
+    borderRadius: 5,
+    padding: 8,
+    marginBottom: 10,
+  },
+
+  chipsContainer: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: 8,
+    marginBottom: 10,
+  },
+  chip: {
+    paddingVertical: 6,
+    paddingHorizontal: 10,
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: "#43A047",
+  },
+  chipSeleccionado: {
+    backgroundColor: "#43A047",
+  },
+  chipText: {
+    fontSize: 12,
+    color: "#43A047",
+  },
+  chipTextSeleccionado: {
+    color: "#fff",
+    fontWeight: "600",
+  },
+
   modalOverlay: {
     flex: 1,
     backgroundColor: "rgba(0,0,0,0.5)",
     justifyContent: "center",
     alignItems: "center",
   },
-  modalBox: { width: "85%", backgroundColor: "#fff", borderRadius: 10, padding: 20, elevation: 5 },
+  modalBox: { width: "85%", backgroundColor: "#fff", borderRadius: 10, padding: 20 },
   modalTitle: {
     fontSize: 18,
     fontWeight: "bold",

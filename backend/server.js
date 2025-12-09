@@ -12,11 +12,13 @@ require("./database/connection");
 const alertasRoutes = require("./routes/alertas");
 const matafuegosRoutes = require("./routes/matafuegos");
 const vencimientosRoutes = require("./routes/vencimientos");
+const botiquinesRoutes = require("./routes/botiquines")
 
 // 🧭 Registrar rutas
 app.use("/api/alertas", alertasRoutes);
 app.use("/api/matafuegos", matafuegosRoutes);
 app.use("/api/vencimientos", vencimientosRoutes);
+app.use("/api/botiquines", botiquinesRoutes);
 
 // 🚀 Iniciar servidor
 const PORT = 5000;

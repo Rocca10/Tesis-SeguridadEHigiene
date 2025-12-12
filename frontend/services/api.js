@@ -87,3 +87,34 @@ export async function eliminarBotiquin(id) {
   });
   return await res.json();
 }
+
+// SEÑALIZACIÓN
+export async function getSenializacion() {
+  const res = await fetch(`${API_URL}/api/senializacion`);
+  return await res.json();
+}
+
+export async function crearSenializacion(data) {
+  const res = await fetch(`${API_URL}/api/senializacion`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(data),
+  });
+  return await res.json();
+}
+
+export async function editarSenializacion(id, data) {
+  const res = await fetch(`${API_URL}/api/senializacion/${id}`, {
+    method: "PUT",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(data),
+  });
+  return await res.json();
+}
+
+export async function eliminarSenializacion(id) {
+  const res = await fetch(`${API_URL}/api/senializacion/${id}`, {
+    method: "DELETE",
+  });
+  return await res.json();
+}

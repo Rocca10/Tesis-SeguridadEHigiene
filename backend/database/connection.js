@@ -42,6 +42,12 @@ db.serialize(() => {
   fechaRevision TEXT
 )`);
 
+  db.run(`CREATE TABLE IF NOT EXISTS senializacion (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  piso TEXT,
+  tipo TEXT,
+  fechaRevision TEXT
+)`);
 });
 
 module.exports = db;

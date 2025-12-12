@@ -91,6 +91,7 @@ useEffect(() => {
         </View>
 
         {[...dataVencimientos]
+          .filter(x => x.diasRestantes>=0) 
           .sort((a, b) => a.diasRestantes - b.diasRestantes)
           .map((item) => (
             <View key={item.id} style={styles.vencimientoItem}>
@@ -162,7 +163,7 @@ useEffect(() => {
           <Text style={styles.accesoTexto}>Botiquines</Text>
         </TouchableOpacity>
 
-        <TouchableOpacity style={styles.accesoItem}>
+        <TouchableOpacity style={styles.accesoItem} onPress={()=> router.push("/senializacion")}>
           <Ionicons name="exit-outline" size={36} color="#FB8C00" />
           <Text style={styles.accesoTexto}>Señalización</Text>
         </TouchableOpacity>

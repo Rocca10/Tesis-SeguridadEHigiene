@@ -91,8 +91,9 @@ useEffect(() => {
         </View>
 
         {[...dataVencimientos]
-          .filter(x => x.diasRestantes>=0) 
+          .filter(v => v.diasRestantes >= 0 && v.diasRestantes <= 60)
           .sort((a, b) => a.diasRestantes - b.diasRestantes)
+          .slice(0,5)
           .map((item) => (
             <View key={item.id} style={styles.vencimientoItem}>
               <View style={{ flex: 1 }}>

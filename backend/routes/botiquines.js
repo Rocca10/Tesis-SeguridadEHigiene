@@ -1,8 +1,12 @@
 const express = require("express");
 const router = express.Router();
 const db = require("../database/connection");
+const { authRequired, requireRole } = require("../middlewares/auth");
 
-// Obtengo todos los botiquines
+// 🔒 Todo lo de botiquines requiere estar logueado
+router.use(authRequired);
+
+// 📍 GET: obtener todos los botiquines (ADMIN / TECNICO / OPERADOR)
 router.get("/", (req, res) => {
   db.all("SELECT * FROM botiquines ORDER BY piso ASC", [], (err, rows) => {
     if (err) return res.status(500).json({ error: err.message });
@@ -10,9 +14,8 @@ router.get("/", (req, res) => {
   });
 });
 
-
-// 📍 POST: crear nuevo botiquín
-router.post("/", (req, res) => {
+// 📍 POST: crear nuevo botiquín (solo ADMIN / TECNICO)
+router.post("/", requireRole("ADMIN", "TECNICO"), (req, res) => {
   const { piso, responsable, elementos, fechaRevision } = req.body;
 
   db.run(
@@ -32,8 +35,8 @@ router.post("/", (req, res) => {
   );
 });
 
-// 📍 PUT: editar botiquín
-router.put("/:id", (req, res) => {
+// 📍 PUT: editar botiquín (solo ADMIN / TECNICO)
+router.put("/:id", requireRole("ADMIN", "TECNICO"), (req, res) => {
   const { id } = req.params;
   const { piso, responsable, elementos, fechaRevision } = req.body;
 
@@ -54,13 +57,12 @@ router.put("/:id", (req, res) => {
   );
 });
 
-// 📍 DELETE: eliminar botiquín
-router.delete("/:id", (req, res) => {
+// 📍 DELETE: eliminar botiquín (solo ADMIN)
+router.delete("/:id", requireRole("ADMIN"), (req, res) => {
   const { id } = req.params;
 
-  db.run("DELETE FROM botiquines WHERE id = ?", id, function (err) {
+  db.run("DELETE FROM botiquines WHERE id = ?", [id], function (err) {
     if (err) return res.status(500).json({ error: err.message });
-
     res.json({ message: "🗑️ Botiquín eliminado", id });
   });
 });

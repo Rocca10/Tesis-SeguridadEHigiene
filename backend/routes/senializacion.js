@@ -1,8 +1,12 @@
 const express = require("express");
 const router = express.Router();
 const db = require("../database/connection");
+const { authRequired, requireRole } = require("../middlewares/auth");
 
-// 📍 GET: obtener toda la señalización
+// 🔒 Todo lo de señalización requiere estar logueado
+router.use(authRequired);
+
+// 📍 GET: obtener toda la señalización (ADMIN / TECNICO / OPERADOR)
 router.get("/", (req, res) => {
   db.all("SELECT * FROM senializacion ORDER BY piso ASC", [], (err, rows) => {
     if (err) return res.status(500).json({ error: err.message });
@@ -10,8 +14,8 @@ router.get("/", (req, res) => {
   });
 });
 
-// 📍 POST: crear señalización
-router.post("/", (req, res) => {
+// 📍 POST: crear señalización (solo ADMIN / TECNICO)
+router.post("/", requireRole("ADMIN", "TECNICO"), (req, res) => {
   const { piso, tipo, fechaRevision } = req.body;
 
   db.run(
@@ -24,14 +28,14 @@ router.post("/", (req, res) => {
         id: this.lastID,
         piso,
         tipo,
-        fechaRevision
+        fechaRevision,
       });
     }
   );
 });
 
-// 📍 PUT: editar señalización
-router.put("/:id", (req, res) => {
+// 📍 PUT: editar señalización (solo ADMIN / TECNICO)
+router.put("/:id", requireRole("ADMIN", "TECNICO"), (req, res) => {
   const { id } = req.params;
   const { piso, tipo, fechaRevision } = req.body;
 
@@ -45,19 +49,18 @@ router.put("/:id", (req, res) => {
         id,
         piso,
         tipo,
-        fechaRevision
+        fechaRevision,
       });
     }
   );
 });
 
-// 📍 DELETE: eliminar señalización
-router.delete("/:id", (req, res) => {
+// 📍 DELETE: eliminar señalización (solo ADMIN)
+router.delete("/:id", requireRole("ADMIN"), (req, res) => {
   const { id } = req.params;
 
-  db.run("DELETE FROM senializacion WHERE id = ?", id, function (err) {
+  db.run("DELETE FROM senializacion WHERE id = ?", [id], function (err) {
     if (err) return res.status(500).json({ error: err.message });
-
     res.json({ message: "🗑️ Señalización eliminada", id });
   });
 });

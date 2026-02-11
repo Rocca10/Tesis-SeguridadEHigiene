@@ -1,8 +1,12 @@
 const express = require("express");
 const router = express.Router();
 const db = require("../database/connection");
+const { authRequired, requireRole } = require("../middlewares/auth");
 
-// 📍 GET: obtener todos los matafuegos
+// 🔒 Todo lo de matafuegos requiere estar logueado
+router.use(authRequired);
+
+// 📍 GET: obtener todos los matafuegos (ADMIN / TECNICO / OPERADOR)
 router.get("/", (req, res) => {
   db.all("SELECT * FROM matafuegos ORDER BY piso ASC", [], (err, rows) => {
     if (err) return res.status(500).json({ error: err.message });
@@ -10,9 +14,10 @@ router.get("/", (req, res) => {
   });
 });
 
-// 📍 POST: crear nuevo matafuego
-router.post("/", (req, res) => {
+// 📍 POST: crear nuevo matafuego (solo ADMIN / TECNICO)
+router.post("/", requireRole("ADMIN", "TECNICO"), (req, res) => {
   const { piso, tipo, kilos, fechaVencimiento } = req.body;
+
   db.run(
     "INSERT INTO matafuegos (piso, tipo, kilos, fechaVencimiento) VALUES (?, ?, ?, ?)",
     [piso, tipo, kilos, fechaVencimiento],
@@ -23,10 +28,11 @@ router.post("/", (req, res) => {
   );
 });
 
-// 📍 PUT: editar matafuego
-router.put("/:id", (req, res) => {
+// 📍 PUT: editar matafuego (solo ADMIN / TECNICO)
+router.put("/:id", requireRole("ADMIN", "TECNICO"), (req, res) => {
   const { id } = req.params;
   const { piso, tipo, kilos, fechaVencimiento } = req.body;
+
   db.run(
     "UPDATE matafuegos SET piso = ?, tipo = ?, kilos = ?, fechaVencimiento = ? WHERE id = ?",
     [piso, tipo, kilos, fechaVencimiento, id],
@@ -37,10 +43,11 @@ router.put("/:id", (req, res) => {
   );
 });
 
-// 📍 DELETE: eliminar matafuego
-router.delete("/:id", (req, res) => {
+// 📍 DELETE: eliminar matafuego (solo ADMIN)
+router.delete("/:id", requireRole("ADMIN"), (req, res) => {
   const { id } = req.params;
-  db.run("DELETE FROM matafuegos WHERE id = ?", id, function (err) {
+
+  db.run("DELETE FROM matafuegos WHERE id = ?", [id], function (err) {
     if (err) return res.status(500).json({ error: err.message });
     res.json({ message: "🗑️ Matafuego eliminado", id });
   });

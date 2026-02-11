@@ -1,6 +1,8 @@
 const sqlite3 = require("sqlite3").verbose();
 const path = require("path");
+const bcrypt = require("bcrypt");
 
+// Ruta donde voy a crear la base de datos
 const dbPath = path.resolve(__dirname, "seguridad.db");
 
 const db = new sqlite3.Database(dbPath, (err) => {
@@ -34,19 +36,47 @@ db.serialize(() => {
   )`);
 
   db.run(`CREATE TABLE IF NOT EXISTS botiquines (
-  id INTEGER PRIMARY KEY AUTOINCREMENT,
-  piso TEXT,
-  responsable TEXT,
-  elementos TEXT,
-  fechaRevision TEXT
-)`);
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    piso TEXT,
+    responsable TEXT,
+    elementos TEXT,
+    fechaRevision TEXT
+  )`);
 
   db.run(`CREATE TABLE IF NOT EXISTS senializacion (
-  id INTEGER PRIMARY KEY AUTOINCREMENT,
-  piso TEXT,
-  tipo TEXT,
-  fechaRevision TEXT
-)`);
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    piso TEXT,
+    tipo TEXT,
+    fechaRevision TEXT
+  )`);
+
+  db.run(`CREATE TABLE IF NOT EXISTS usuarios (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    usuario TEXT NOT NULL UNIQUE,
+    password_hash TEXT NOT NULL,
+    rol TEXT NOT NULL CHECK (rol IN ('ADMIN', 'TECNICO', 'OPERADOR')),
+    activo INTEGER NOT NULL DEFAULT 1,
+    creado_en TEXT NOT NULL DEFAULT (datetime('now'))
+  )`);
 });
+
+async function seedUsers() {
+  const users = [
+    { usuario: "admin", password: "Admin123", rol: "ADMIN" },
+    { usuario: "tecnico", password: "Tecnico123", rol: "TECNICO" },
+    { usuario: "operador", password: "Operador123", rol: "OPERADOR" },
+  ];
+
+  for (const u of users) {
+    const hash = await bcrypt.hash(u.password, 10);
+
+    db.run(
+      "INSERT OR IGNORE INTO usuarios (usuario, password_hash, rol, activo) VALUES (?, ?, ?, 1)",
+      [u.usuario, hash, u.rol]
+    );
+  }
+}
+
+seedUsers();
 
 module.exports = db;

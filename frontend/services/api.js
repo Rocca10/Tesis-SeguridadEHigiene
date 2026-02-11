@@ -1,120 +1,143 @@
-const API_URL = "http://10.0.2.2:5000";
+import * as SecureStore from "expo-secure-store";
 
-//VENCIMIENTOS
-export async function getVencimientos() {
-  const res = await fetch(`${API_URL}/api/vencimientos`);
-  return await res.json();
+const API_URL = "http://10.0.2.2:5000"; // emulador Android
+
+// ✅ Función genérica para fetch con autenticación
+async function fetchConAuth(path, options = {}) {
+  const token = await SecureStore.getItemAsync("token");
+
+  const headers = {
+    ...(options.headers || {}),
+    // Solo seteamos Content-Type si NO es FormData
+    ...(options.body instanceof FormData ? {} : { "Content-Type": "application/json" }),
+  };
+
+  if (token) {
+    headers.Authorization = `Bearer ${token}`;
+  }
+
+  const res = await fetch(`${API_URL}${path}`, {
+    ...options,
+    headers,
+  });
+
+  // Intentamos parsear json (si viene vacío, no explota)
+  const data = await res.json().catch(() => null);
+
+  // Si hay error HTTP, tiramos error con mensaje del backend
+  if (!res.ok) {
+    const msg = data?.message || `Error ${res.status}`;
+    throw new Error(msg);
+  }
+
+  return data;
 }
 
-export async function getAlertas() {
-  const res = await fetch(`${API_URL}/api/alertas`);
-  return await res.json();
+// ======================
+// VENCIMIENTOS
+// ======================
+export function getVencimientos() {
+  return fetchConAuth("/api/vencimientos");
 }
 
-export async function crearVencimiento(data) {
-  const res = await fetch(`${API_URL}/api/vencimientos`, {
+export function crearVencimiento(data) {
+  return fetchConAuth("/api/vencimientos", {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
     body: JSON.stringify(data),
   });
-  return await res.json();
 }
 
-export async function crearAlerta(data) {
-  const res = await fetch(`${API_URL}/api/alertas`, {
+// ======================
+// ALERTAS
+// ======================
+export function getAlertas() {
+  return fetchConAuth("/api/alertas");
+}
+
+export function crearAlerta(data) {
+  return fetchConAuth("/api/alertas", {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
     body: JSON.stringify(data),
   });
-  return await res.json();
 }
 
-export async function getMatafuegos() {
-  const res = await fetch(`${API_URL}/api/matafuegos`);
-  return await res.json();
+// ======================
+// MATAFUEGOS
+// ======================
+export function getMatafuegos() {
+  return fetchConAuth("/api/matafuegos");
 }
 
-export async function crearMatafuego(data) {
-  const res = await fetch(`${API_URL}/api/matafuegos`, {
+export function crearMatafuego(data) {
+  return fetchConAuth("/api/matafuegos", {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
     body: JSON.stringify(data),
   });
-  return await res.json();
 }
 
-export async function editarMatafuego(id, data) {
-  const res = await fetch(`${API_URL}/api/matafuegos/${id}`, {
+export function editarMatafuego(id, data) {
+  return fetchConAuth(`/api/matafuegos/${id}`, {
     method: "PUT",
-    headers: { "Content-Type": "application/json" },
     body: JSON.stringify(data),
   });
-  return await res.json();
 }
 
-export async function eliminarMatafuego(id) {
-  const res = await fetch(`${API_URL}/api/matafuegos/${id}`, { method: "DELETE" });
-  return await res.json();
+export function eliminarMatafuego(id) {
+  return fetchConAuth(`/api/matafuegos/${id}`, {
+    method: "DELETE",
+  });
 }
 
+// ======================
 // BOTIQUINES
-export async function getBotiquines() {
-  const res = await fetch(`${API_URL}/api/botiquines`);
-  return await res.json();
+// ======================
+export function getBotiquines() {
+  return fetchConAuth("/api/botiquines");
 }
 
-export async function crearBotiquin(data) {
-  const res = await fetch(`${API_URL}/api/botiquines`, {
+export function crearBotiquin(data) {
+  return fetchConAuth("/api/botiquines", {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
     body: JSON.stringify(data),
   });
-  return await res.json();
 }
 
-export async function editarBotiquin(id, data) {
-  const res = await fetch(`${API_URL}/api/botiquines/${id}`, {
+export function editarBotiquin(id, data) {
+  return fetchConAuth(`/api/botiquines/${id}`, {
     method: "PUT",
-    headers: { "Content-Type": "application/json" },
     body: JSON.stringify(data),
   });
-  return await res.json();
 }
 
-export async function eliminarBotiquin(id) {
-  const res = await fetch(`${API_URL}/api/botiquines/${id}`, {
+export function eliminarBotiquin(id) {
+  return fetchConAuth(`/api/botiquines/${id}`, {
     method: "DELETE",
   });
-  return await res.json();
 }
 
-// SEÑALIZACIÓN
-export async function getSenializacion() {
-  const res = await fetch(`${API_URL}/api/senializacion`);
-  return await res.json();
+// ======================
+// SEÑALIZACION
+// ======================
+export function getSenializacion() {
+  return fetchConAuth("/api/senializacion");
 }
 
-export async function crearSenializacion(data) {
-  const res = await fetch(`${API_URL}/api/senializacion`, {
+export function crearSenializacion(data) {
+  return fetchConAuth("/api/senializacion", {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
     body: JSON.stringify(data),
   });
-  return await res.json();
 }
 
-export async function editarSenializacion(id, data) {
-  const res = await fetch(`${API_URL}/api/senializacion/${id}`, {
+export function editarSenializacion(id, data) {
+  return fetchConAuth(`/api/senializacion/${id}`, {
     method: "PUT",
-    headers: { "Content-Type": "application/json" },
     body: JSON.stringify(data),
   });
-  return await res.json();
 }
 
-export async function eliminarSenializacion(id) {
-  const res = await fetch(`${API_URL}/api/senializacion/${id}`, {
+export function eliminarSenializacion(id) {
+  return fetchConAuth(`/api/senializacion/${id}`, {
     method: "DELETE",
   });
-  return await res.json();
 }

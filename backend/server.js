@@ -14,6 +14,7 @@ const matafuegosRoutes = require("./routes/matafuegos");
 const vencimientosRoutes = require("./routes/vencimientos");
 const botiquinesRoutes = require("./routes/botiquines");
 const senializacionRoutes = require("./routes/senializacion");
+const authRoutes = require("./routes/auth");
 
 
 // 🧭 Registrar rutas
@@ -22,6 +23,7 @@ app.use("/api/matafuegos", matafuegosRoutes);
 app.use("/api/vencimientos", vencimientosRoutes);
 app.use("/api/botiquines", botiquinesRoutes);
 app.use("/api/senializacion", senializacionRoutes);
+app.use("/auth", authRoutes);
 
 // 🚀 Iniciar servidor
 const PORT = 5000;

@@ -1,3 +1,4 @@
+import { router } from "expo-router";
 import * as SecureStore from "expo-secure-store";
 
 const API_URL = "http://10.0.2.2:5000"; // emulador Android
@@ -8,26 +9,25 @@ async function fetchConAuth(path, options = {}) {
 
   const headers = {
     ...(options.headers || {}),
-    // Solo seteamos Content-Type si NO es FormData
     ...(options.body instanceof FormData ? {} : { "Content-Type": "application/json" }),
   };
 
-  if (token) {
-    headers.Authorization = `Bearer ${token}`;
-  }
+  if (token) headers.Authorization = `Bearer ${token}`;
 
-  const res = await fetch(`${API_URL}${path}`, {
-    ...options,
-    headers,
-  });
+  const res = await fetch(`${API_URL}${path}`, { ...options, headers });
 
-  // Intentamos parsear json (si viene vacío, no explota)
   const data = await res.json().catch(() => null);
 
-  // Si hay error HTTP, tiramos error con mensaje del backend
+  // ✅ Si el token no sirve, limpiamos y mandamos a login
+  if (res.status === 401) {
+    await SecureStore.deleteItemAsync("token");
+    await SecureStore.deleteItemAsync("user");
+    router.replace("/login");
+    throw new Error(data?.message || "No autenticado");
+  }
+
   if (!res.ok) {
-    const msg = data?.message || `Error ${res.status}`;
-    throw new Error(msg);
+    throw new Error(data?.message || `Error ${res.status}`);
   }
 
   return data;

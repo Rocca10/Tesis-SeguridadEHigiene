@@ -200,6 +200,12 @@ export default function SenializacionScreen() {
             />
 
             <View style={styles.modalButtons}>
+                            <TouchableOpacity
+                style={[styles.btn, { backgroundColor: "#E53935" }]}
+                onPress={() => setEditando(null)}
+              >
+                <Text style={styles.btnText}>Cancelar</Text>
+              </TouchableOpacity>
               <TouchableOpacity
                 style={[styles.btn, { backgroundColor: "#1E88E5" }]}
                 onPress={guardarEdicion}
@@ -207,12 +213,7 @@ export default function SenializacionScreen() {
                 <Text style={styles.btnText}>💾 Guardar</Text>
               </TouchableOpacity>
 
-              <TouchableOpacity
-                style={[styles.btn, { backgroundColor: "#E53935" }]}
-                onPress={() => setEditando(null)}
-              >
-                <Text style={styles.btnText}>Cancelar</Text>
-              </TouchableOpacity>
+
             </View>
           </View>
         </View>

@@ -108,8 +108,15 @@ export default function BotiquinesScreen() {
   };
 
   const handleEliminar = async (id: number) => {
-    await eliminarBotiquin(id);
-    cargarDatos();
+    Alert.alert("Eliminar", "¿Deseas eliminar este botiquín?", [
+      { text: "Cancelar", style: "cancel" },
+      {
+        text: "Eliminar", style: "destructive", onPress: async () => {
+          await eliminarBotiquin(id);
+          cargarDatos();
+        },
+      },
+    ]);
   };
 
   const empezarEdicion = (item: Botiquin) => {
@@ -261,18 +268,19 @@ export default function BotiquinesScreen() {
 
             <View style={styles.modalButtons}>
               <TouchableOpacity
+                style={[styles.btn, { backgroundColor: "#E53935" }]}
+                onPress={() => setEditando(null)}
+              >
+                <Text style={styles.btnText}>Cancelar</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
                 style={[styles.btn, { backgroundColor: "#43A047" }]}
                 onPress={guardarEdicion}
               >
                 <Text style={styles.btnText}>💾 Guardar</Text>
               </TouchableOpacity>
 
-              <TouchableOpacity
-                style={[styles.btn, { backgroundColor: "#E53935" }]}
-                onPress={() => setEditando(null)}
-              >
-                <Text style={styles.btnText}>Cancelar</Text>
-              </TouchableOpacity>
+
             </View>
           </View>
         </View>

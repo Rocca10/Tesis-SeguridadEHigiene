@@ -1,5 +1,6 @@
 import { Ionicons } from "@expo/vector-icons";
 import { Picker } from "@react-native-picker/picker";
+import { Stack } from "expo-router";
 import { useEffect, useState } from "react";
 import {
   ActivityIndicator,
@@ -57,9 +58,10 @@ export default function AlertasScreen() {
     try {
       const res = await fetch(API_URL);
       const data = await res.json();
-      setAlertas(data);
+      setAlertas(Array.isArray(data) ? data : []);
     } catch (err) {
       console.log("❌ Error al cargar alertas:", err);
+      setAlertas([]);
     } finally {
       setLoading(false);
     }
@@ -129,8 +131,18 @@ export default function AlertasScreen() {
   }
 
   return (
-    <ScrollView style={styles.container}>
-      <Text style={styles.title}>Alertas Activas</Text>
+    <>
+      <Stack.Screen
+        options={{
+          title: "Alertas",
+          headerStyle: { backgroundColor: "#E53935" },
+          headerTintColor: "#fff",
+          headerTitleAlign: "center",
+        }}
+      />
+
+      <ScrollView style={styles.container}>
+        <Text style={styles.title}>Alertas Activas</Text>
 
       {alertas.length === 0 ? (
         <Text style={styles.noAlertas}>No hay alertas registradas.</Text>
@@ -257,6 +269,7 @@ export default function AlertasScreen() {
         </View>
       </Modal>
     </ScrollView>
+    </>
   );
 }
 

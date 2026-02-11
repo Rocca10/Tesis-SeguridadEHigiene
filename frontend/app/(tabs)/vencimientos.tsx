@@ -10,7 +10,7 @@ import {
   View,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
-import { crearVencimiento, getVencimientos } from "../../services/api";
+import { crearVencimiento, getVencimientos, getMatafuegos } from "../../services/api";
 
 export default function VencimientosScreen() {
   const [vencimientos, setVencimientos] = useState<any[]>([]);
@@ -35,19 +35,25 @@ export default function VencimientosScreen() {
 
       const [vencimientosBase, matafuegos] = await Promise.all([
         getVencimientos(),
-        fetch("http://10.0.2.2:5000/api/matafuegos").then((r) => r.json()),
+        getMatafuegos(),
       ]);
 
+      // ✅ Asegurar que sean arrays
+      const vencimientosArr = Array.isArray(vencimientosBase) ? vencimientosBase : [];
+      const matafuegosArr = Array.isArray(matafuegos) ? matafuegos : [];
+
       // 🔧 Transformar los matafuegos a formato común
-      const vencimientosMatafuegos = matafuegos.map((m: any) => ({
-        id: `M${m.id}`,
-        nombre: `Matafuego - Piso ${m.piso}`,
-        fecha: m.fechaVencimiento,
-        diasRestantes: calcularDiasRestantes(m.fechaVencimiento),
-      }));
+      const vencimientosMatafuegos = matafuegosArr
+        .filter((m: any) => m?.fechaVencimiento) // Filtrar los que tienen fecha
+        .map((m: any) => ({
+          id: `M${m.id}`,
+          nombre: `Matafuego - Piso ${m.piso}`,
+          fecha: m.fechaVencimiento,
+          diasRestantes: calcularDiasRestantes(m.fechaVencimiento),
+        }));
 
       // 🔹 Fusionar todo en un único array y ordenar
-      const todos = [...vencimientosBase, ...vencimientosMatafuegos].sort(
+      const todos = [...vencimientosArr, ...vencimientosMatafuegos].sort(
         (a, b) => a.diasRestantes - b.diasRestantes
       );
 

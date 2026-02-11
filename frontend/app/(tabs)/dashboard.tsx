@@ -1,8 +1,17 @@
 import { Ionicons } from "@expo/vector-icons";
-import { useRouter } from "expo-router";
+import { useRouter, router } from 'expo-router';
 import { useEffect, useState } from "react";
-import { Image, ScrollView, StyleSheet, Text, TouchableOpacity, View } from "react-native";
-import { getAlertas, getVencimientos } from "../../services/api";
+import {
+  Alert,
+  Image,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
+} from "react-native";
+import * as SecureStore from "expo-secure-store";
+import { getAlertas, getMatafuegos, getVencimientos } from "../../services/api";
 
 export default function DashboardScreen() {
   const router = useRouter();
@@ -31,38 +40,61 @@ export default function DashboardScreen() {
     return Math.ceil(diff / (1000 * 60 * 60 * 24));
   };
 
-  // 🔹 Cargar datos desde el backend al iniciar
-useEffect(() => {
-  const cargarDatos = async () => {
-    try {
-      const vencimientos = await getVencimientos();
-      const alertas = await getAlertas();
-      const matafuegos = await fetch("http://10.0.2.2:5000/api/matafuegos").then(r => r.json());
 
-      // ✅ Filtramos vencimientos nulos
-      const vencimientosValidos = vencimientos.filter(
-        (v: any) => v.nombre && v.fecha && v.diasRestantes != null
-      );
+  // 🔹 Cargar datos desde el backend al iniciar (con protección)
+  useEffect(() => {
+    const cargarDatos = async () => {
+      // ✅ Si no hay token, afuera
+      const token = await SecureStore.getItemAsync("token");
+      if (!token) {
+        router.replace("/login");
+        return;
+      }
 
-      // 🔹 Transformar los matafuegos al mismo formato que vencimientos
-      const vencimientosMatafuegos = matafuegos.map((m: any) => ({
-        id: m.id + 10000,
-        nombre: `Matafuego - Piso ${m.piso}`,
-        fecha: m.fechaVencimiento,
-        diasRestantes: calcularDiasRestantes(m.fechaVencimiento),
-      }));
+      try {
+        const vencimientos = await getVencimientos();
+        const alertas = await getAlertas();
+        const matafuegos = await getMatafuegos();
 
-      // 🔹 Combinar todo
-      setDataVencimientos([...vencimientosValidos, ...vencimientosMatafuegos]);
-      setDataAlertas(alertas);
-    } catch (error) {
-      console.log("❌ Error al cargar datos:", error);
-    }
-  };
+        // ✅ Asegurar arrays (por si viniera algo raro)
+        const vencimientosArr = Array.isArray(vencimientos) ? vencimientos : [];
+        const alertasArr = Array.isArray(alertas) ? alertas : [];
+        const matafuegosArr = Array.isArray(matafuegos) ? matafuegos : [];
 
-  cargarDatos();
-}, []);
+        // ✅ Filtramos vencimientos nulos
+        const vencimientosValidos = vencimientosArr.filter(
+          (v: any) => v.nombre && v.fecha && v.diasRestantes != null
+        );
 
+        // 🔹 Transformar matafuegos al formato vencimientos
+        const vencimientosMatafuegos = matafuegosArr
+          .filter((m: any) => m?.fechaVencimiento)
+          .map((m: any) => ({
+            id: m.id + 10000,
+            nombre: `Matafuego - Piso ${m.piso}`,
+            fecha: m.fechaVencimiento,
+            diasRestantes: calcularDiasRestantes(m.fechaVencimiento),
+          }));
+
+        // 🔹 Combinar todo
+        setDataVencimientos([...vencimientosValidos, ...vencimientosMatafuegos]);
+        setDataAlertas(alertasArr);
+      } catch (error: any) {
+        // ✅ Si se venció o no está autenticado, al login
+        const msg = String(error?.message || error);
+        if (msg.includes("No autenticado") || msg.includes("Sesión vencida")) {
+          await SecureStore.deleteItemAsync("token");
+          await SecureStore.deleteItemAsync("user");
+          router.replace("/login");
+          return;
+        }
+
+        console.log("❌ Error al cargar datos:", error);
+      }
+    };
+
+    cargarDatos();
+  }, [router]);
 
   return (
     <ScrollView style={styles.container}>
@@ -79,9 +111,9 @@ useEffect(() => {
       />
 
       <Text style={styles.titulo}>Centro de Formación Profesional UTEDYC</Text>
-      <Text style={styles.subtitulo}>
-        Seguridad e Higiene - Panel Principal
-      </Text>
+      <Text style={styles.subtitulo}>Seguridad e Higiene - Panel Principal</Text>
+
+
 
       {/* Próximos Vencimientos */}
       <View style={styles.card}>
@@ -91,16 +123,14 @@ useEffect(() => {
         </View>
 
         {[...dataVencimientos]
-          .filter(v => v.diasRestantes >= 0 && v.diasRestantes <= 60)
+          .filter((v) => v.diasRestantes >= 0 && v.diasRestantes <= 60)
           .sort((a, b) => a.diasRestantes - b.diasRestantes)
-          .slice(0,5)
+          .slice(0, 5)
           .map((item) => (
             <View key={item.id} style={styles.vencimientoItem}>
               <View style={{ flex: 1 }}>
                 <Text style={styles.vencimientoNombre}>{item.nombre}</Text>
-                <Text style={styles.vencimientoFecha}>
-                  Vence: {item.fecha}
-                </Text>
+                <Text style={styles.vencimientoFecha}>Vence: {item.fecha}</Text>
               </View>
               <Text
                 style={[
@@ -154,22 +184,31 @@ useEffect(() => {
 
       {/* Accesos directos */}
       <View style={styles.accesosContainer}>
-        <TouchableOpacity style={styles.accesoItem} onPress={() => router.push("/matafuegos")}>
+        <TouchableOpacity
+          style={styles.accesoItem}
+          onPress={() => router.push("/matafuegos")}
+        >
           <Ionicons name="flame-outline" size={36} color="#E53935" />
           <Text style={styles.accesoTexto}>Matafuegos</Text>
         </TouchableOpacity>
 
-        <TouchableOpacity style={styles.accesoItem} onPress={() => router.push("/botiquines")}>
+        <TouchableOpacity
+          style={styles.accesoItem}
+          onPress={() => router.push("/botiquines")}
+        >
           <Ionicons name="medical-outline" size={36} color="#43A047" />
           <Text style={styles.accesoTexto}>Botiquines</Text>
         </TouchableOpacity>
 
-        <TouchableOpacity style={styles.accesoItem} onPress={()=> router.push("/senializacion")}>
+        <TouchableOpacity
+          style={styles.accesoItem}
+          onPress={() => router.push("/senializacion")}
+        >
           <Ionicons name="exit-outline" size={36} color="#FB8C00" />
           <Text style={styles.accesoTexto}>Señalización</Text>
         </TouchableOpacity>
 
-        <TouchableOpacity style={styles.accesoItem}>
+        <TouchableOpacity style={styles.accesoItem} onPress={() => router.push("/configuracion")}>
           <Ionicons name="settings-outline" size={36} color="#1E88E5" />
           <Text style={styles.accesoTexto}>Configuración</Text>
         </TouchableOpacity>
@@ -177,7 +216,7 @@ useEffect(() => {
 
       <View style={{ marginTop: 0, marginBottom: 50 }}>
         <Text style={styles.footer}>
-          © 2025 CFP UTEDYC - Sistema de Seguridad e Higiene
+          © 2026 CFP UTEDYC - Sistema de Seguridad e Higiene
         </Text>
       </View>
     </ScrollView>

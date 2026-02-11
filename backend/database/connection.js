@@ -1,7 +1,6 @@
 const sqlite3 = require("sqlite3").verbose();
 const path = require("path");
 
-// ✅ Ruta correcta a la base de datos
 const dbPath = path.resolve(__dirname, "seguridad.db");
 
 const db = new sqlite3.Database(dbPath, (err) => {

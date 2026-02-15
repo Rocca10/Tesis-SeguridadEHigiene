@@ -105,7 +105,7 @@ export default function Login() {
       </View>
 
       {/* Footer */}
-      <Text style={styles.footer}>© 2025 CFP UTEDYC</Text>
+      <Text style={styles.footer}>© 2026 CFP UTEDYC - ROCCA NICOLAS</Text>
         </ScrollView>
       </TouchableWithoutFeedback>
     </KeyboardAvoidingView>

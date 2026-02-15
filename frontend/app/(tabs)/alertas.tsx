@@ -14,6 +14,8 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
+import { getAlertas, crearAlerta } from "../../services/api";
+import * as SecureStore from "expo-secure-store";
 
 const API_URL = "http://10.0.2.2:5000/api/alertas";
 
@@ -56,8 +58,7 @@ export default function AlertasScreen() {
 
   const cargarAlertas = async () => {
     try {
-      const res = await fetch(API_URL);
-      const data = await res.json();
+      const data = await getAlertas();
       setAlertas(Array.isArray(data) ? data : []);
     } catch (err) {
       console.log("❌ Error al cargar alertas:", err);
@@ -67,23 +68,24 @@ export default function AlertasScreen() {
     }
   };
 
-  const crearAlerta = async () => {
+  const crearAlertaLocal = async () => {
     if (!nueva.tipo || !nueva.mensaje)
       return Alert.alert("⚠️", "Completa tipo y mensaje");
 
-    await fetch(API_URL, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(nueva),
-    });
-
-    setNueva({
-      tipo: "",
-      mensaje: "",
-      icono: "alert-circle-outline",
-      color: "#E53935",
-    });
-    cargarAlertas();
+    try {
+      await crearAlerta(nueva);
+      setNueva({
+        tipo: "",
+        mensaje: "",
+        icono: "alert-circle-outline",
+        color: "#E53935",
+      });
+      cargarAlertas();
+      Alert.alert("✅", "Alerta creada correctamente");
+    } catch (error) {
+      console.log("Error al crear alerta:", error);
+      Alert.alert("Error", "No se pudo crear la alerta");
+    }
   };
 
   const eliminarAlerta = async (id: number) => {
@@ -93,8 +95,18 @@ export default function AlertasScreen() {
         text: "Eliminar",
         style: "destructive",
         onPress: async () => {
-          await fetch(`${API_URL}/${id}`, { method: "DELETE" });
-          cargarAlertas();
+          try {
+            const token = await SecureStore.getItemAsync("token");
+            await fetch(`${API_URL}/${id}`, { 
+              method: "DELETE",
+              headers: {
+                Authorization: `Bearer ${token}`,
+              }
+            });
+            cargarAlertas();
+          } catch (error) {
+            console.log("Error al eliminar:", error);
+          }
         },
       },
     ]);
@@ -112,13 +124,21 @@ export default function AlertasScreen() {
 
   const guardarEdicion = async () => {
     if (!editando) return;
-    await fetch(`${API_URL}/${editando.id}`, {
-      method: "PUT",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(formEdit),
-    });
-    setEditando(null);
-    cargarAlertas();
+    try {
+      const token = await SecureStore.getItemAsync("token");
+      await fetch(`${API_URL}/${editando.id}`, {
+        method: "PUT",
+        headers: { 
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify(formEdit),
+      });
+      setEditando(null);
+      cargarAlertas();
+    } catch (error) {
+      console.log("Error al editar:", error);
+    }
   };
 
   if (loading) {
@@ -210,7 +230,7 @@ export default function AlertasScreen() {
           </Picker>
         </View>
 
-        <Button title="➕ Crear Alerta" onPress={crearAlerta} />
+        <Button title="➕ Crear Alerta" onPress={crearAlertaLocal} />
       </View>
 
       {/* ✏️ Modal de edición */}

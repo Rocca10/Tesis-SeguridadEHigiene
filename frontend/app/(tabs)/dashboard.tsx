@@ -1,8 +1,7 @@
 import { Ionicons } from "@expo/vector-icons";
-import { useRouter, router } from 'expo-router';
+import { useRouter } from "expo-router";
 import { useEffect, useState } from "react";
 import {
-  Alert,
   Image,
   ScrollView,
   StyleSheet,
@@ -39,7 +38,6 @@ export default function DashboardScreen() {
     const diff = venc.getTime() - hoy.getTime();
     return Math.ceil(diff / (1000 * 60 * 60 * 24));
   };
-
 
   // 🔹 Cargar datos desde el backend al iniciar (con protección)
   useEffect(() => {
@@ -113,8 +111,6 @@ export default function DashboardScreen() {
       <Text style={styles.titulo}>Centro de Formación Profesional UTEDYC</Text>
       <Text style={styles.subtitulo}>Seguridad e Higiene - Panel Principal</Text>
 
-
-
       {/* Próximos Vencimientos */}
       <View style={styles.card}>
         <View style={styles.cardHeader}>
@@ -155,31 +151,35 @@ export default function DashboardScreen() {
           <Text style={styles.cardTitle}>Alertas Activas</Text>
         </View>
 
-        {dataAlertas.map((alerta) => (
-          <View key={alerta.id} style={styles.alertaItem}>
-            <Ionicons
-              name={
-                alerta.tipo === "Capacitación"
-                  ? "school-outline"
-                  : alerta.tipo === "Simulacro"
-                  ? "flame-outline"
-                  : "construct-outline"
-              }
-              size={20}
-              color={
-                alerta.tipo === "Capacitación"
-                  ? "#1E88E5"
-                  : alerta.tipo === "Simulacro"
-                  ? "#FB8C00"
-                  : "#E53935"
-              }
-              style={{ marginRight: 8 }}
-            />
-            <Text style={styles.alertaTexto}>
-              {alerta.tipo}: {alerta.mensaje}
-            </Text>
-          </View>
-        ))}
+        {dataAlertas.length === 0 ? (
+          <Text style={styles.noData}>No hay alertas activas</Text>
+        ) : (
+          dataAlertas.map((alerta) => (
+            <View key={alerta.id} style={styles.alertaItem}>
+              <Ionicons
+                name={
+                  alerta.tipo === "Capacitación"
+                    ? "school-outline"
+                    : alerta.tipo === "Simulacro"
+                    ? "flame-outline"
+                    : "construct-outline"
+                }
+                size={20}
+                color={
+                  alerta.tipo === "Capacitación"
+                    ? "#1E88E5"
+                    : alerta.tipo === "Simulacro"
+                    ? "#FB8C00"
+                    : "#E53935"
+                }
+                style={{ marginRight: 8 }}
+              />
+              <Text style={styles.alertaTexto}>
+                {alerta.tipo}: {alerta.mensaje}
+              </Text>
+            </View>
+          ))
+        )}
       </View>
 
       {/* Accesos directos */}
@@ -208,7 +208,10 @@ export default function DashboardScreen() {
           <Text style={styles.accesoTexto}>Señalización</Text>
         </TouchableOpacity>
 
-        <TouchableOpacity style={styles.accesoItem} onPress={() => router.push("/configuracion")}>
+        <TouchableOpacity 
+          style={styles.accesoItem} 
+          onPress={() => router.push("/(tabs)/configuracion")}
+        >
           <Ionicons name="settings-outline" size={36} color="#1E88E5" />
           <Text style={styles.accesoTexto}>Configuración</Text>
         </TouchableOpacity>
@@ -296,6 +299,13 @@ const styles = StyleSheet.create({
     flex: 1,
     fontSize: 14,
     color: "#333",
+  },
+  noData: {
+    textAlign: "center",
+    color: "#999",
+    fontSize: 13,
+    fontStyle: "italic",
+    paddingVertical: 8,
   },
   footer: {
     textAlign: "center",

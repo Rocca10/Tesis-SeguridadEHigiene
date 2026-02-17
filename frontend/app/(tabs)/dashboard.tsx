@@ -1,6 +1,6 @@
 import { Ionicons } from "@expo/vector-icons";
-import { useRouter } from "expo-router";
-import { useEffect, useState } from "react";
+import { useRouter, useFocusEffect } from "expo-router";
+import { useCallback, useState } from "react";
 import {
   Image,
   ScrollView,
@@ -31,68 +31,91 @@ export default function DashboardScreen() {
   const [dataVencimientos, setDataVencimientos] = useState<Vencimiento[]>([]);
   const [dataAlertas, setDataAlertas] = useState<Alerta[]>([]);
 
-  // 📅 Calcular días restantes
+  // 📅 Calcular días restantes (mejorado)
   const calcularDiasRestantes = (fecha: string) => {
-    const hoy = new Date();
-    const venc = new Date(fecha);
-    const diff = venc.getTime() - hoy.getTime();
-    return Math.ceil(diff / (1000 * 60 * 60 * 24));
+    try {
+      const hoy = new Date();
+      hoy.setHours(0, 0, 0, 0); // Resetear horas para comparar solo fechas
+      
+      const venc = new Date(fecha);
+      venc.setHours(0, 0, 0, 0);
+      
+      const diff = venc.getTime() - hoy.getTime();
+      const dias = Math.ceil(diff / (1000 * 60 * 60 * 24));
+      
+      return dias;
+    } catch (error) {
+      console.error("Error al calcular días:", error);
+      return 0;
+    }
   };
 
-  // 🔹 Cargar datos desde el backend al iniciar (con protección)
-  useEffect(() => {
-    const cargarDatos = async () => {
-      // ✅ Si no hay token, afuera
-      const token = await SecureStore.getItemAsync("token");
-      if (!token) {
+  // 🔹 Cargar datos desde el backend
+  const cargarDatos = useCallback(async () => {
+    // ✅ Si no hay token, afuera
+    const token = await SecureStore.getItemAsync("token");
+    if (!token) {
+      router.replace("/login");
+      return;
+    }
+
+    try {
+      console.log("🔄 Cargando datos del dashboard...");
+      
+      const vencimientos = await getVencimientos();
+      const alertas = await getAlertas();
+      const matafuegos = await getMatafuegos();
+
+      // ✅ Asegurar arrays (por si viniera algo raro)
+      const vencimientosArr = Array.isArray(vencimientos) ? vencimientos : [];
+      const alertasArr = Array.isArray(alertas) ? alertas : [];
+      const matafuegosArr = Array.isArray(matafuegos) ? matafuegos : [];
+
+      // ✅ Filtramos vencimientos nulos y RECALCULAMOS días
+      const vencimientosValidos = vencimientosArr
+        .filter((v: any) => v.nombre && v.fecha)
+        .map((v: any) => ({
+          ...v,
+          diasRestantes: calcularDiasRestantes(v.fecha), // ← RECALCULAR AQUÍ
+        }));
+
+      // 🔹 Transformar matafuegos al formato vencimientos
+      const vencimientosMatafuegos = matafuegosArr
+        .filter((m: any) => m?.fechaVencimiento)
+        .map((m: any) => ({
+          id: m.id + 10000,
+          nombre: `Matafuego - Piso ${m.piso}`,
+          fecha: m.fechaVencimiento,
+          diasRestantes: calcularDiasRestantes(m.fechaVencimiento),
+        }));
+
+      // 🔹 Combinar todo
+      const todosVencimientos = [...vencimientosValidos, ...vencimientosMatafuegos];
+      console.log("✅ Total vencimientos cargados:", todosVencimientos.length);
+      
+      setDataVencimientos(todosVencimientos);
+      setDataAlertas(alertasArr);
+    } catch (error: any) {
+      // ✅ Si se venció o no está autenticado, al login
+      const msg = String(error?.message || error);
+      if (msg.includes("No autenticado") || msg.includes("Sesión vencida")) {
+        await SecureStore.deleteItemAsync("token");
+        await SecureStore.deleteItemAsync("user");
         router.replace("/login");
         return;
       }
 
-      try {
-        const vencimientos = await getVencimientos();
-        const alertas = await getAlertas();
-        const matafuegos = await getMatafuegos();
-
-        // ✅ Asegurar arrays (por si viniera algo raro)
-        const vencimientosArr = Array.isArray(vencimientos) ? vencimientos : [];
-        const alertasArr = Array.isArray(alertas) ? alertas : [];
-        const matafuegosArr = Array.isArray(matafuegos) ? matafuegos : [];
-
-        // ✅ Filtramos vencimientos nulos
-        const vencimientosValidos = vencimientosArr.filter(
-          (v: any) => v.nombre && v.fecha && v.diasRestantes != null
-        );
-
-        // 🔹 Transformar matafuegos al formato vencimientos
-        const vencimientosMatafuegos = matafuegosArr
-          .filter((m: any) => m?.fechaVencimiento)
-          .map((m: any) => ({
-            id: m.id + 10000,
-            nombre: `Matafuego - Piso ${m.piso}`,
-            fecha: m.fechaVencimiento,
-            diasRestantes: calcularDiasRestantes(m.fechaVencimiento),
-          }));
-
-        // 🔹 Combinar todo
-        setDataVencimientos([...vencimientosValidos, ...vencimientosMatafuegos]);
-        setDataAlertas(alertasArr);
-      } catch (error: any) {
-        // ✅ Si se venció o no está autenticado, al login
-        const msg = String(error?.message || error);
-        if (msg.includes("No autenticado") || msg.includes("Sesión vencida")) {
-          await SecureStore.deleteItemAsync("token");
-          await SecureStore.deleteItemAsync("user");
-          router.replace("/login");
-          return;
-        }
-
-        console.log("❌ Error al cargar datos:", error);
-      }
-    };
-
-    cargarDatos();
+      console.log("❌ Error al cargar datos:", error);
+    }
   }, [router]);
+
+  // 🔄 Recargar datos cada vez que la pantalla gana foco
+  useFocusEffect(
+    useCallback(() => {
+      console.log("👀 Dashboard ganó foco, recargando datos...");
+      cargarDatos();
+    }, [cargarDatos])
+  );
 
   return (
     <ScrollView style={styles.container}>
@@ -118,30 +141,34 @@ export default function DashboardScreen() {
           <Text style={styles.cardTitle}>Próximos Vencimientos</Text>
         </View>
 
-        {[...dataVencimientos]
-          .filter((v) => v.diasRestantes >= 0 && v.diasRestantes <= 60)
-          .sort((a, b) => a.diasRestantes - b.diasRestantes)
-          .slice(0, 5)
-          .map((item) => (
-            <View key={item.id} style={styles.vencimientoItem}>
-              <View style={{ flex: 1 }}>
-                <Text style={styles.vencimientoNombre}>{item.nombre}</Text>
-                <Text style={styles.vencimientoFecha}>Vence: {item.fecha}</Text>
+        {dataVencimientos.length === 0 ? (
+          <Text style={styles.noData}>No hay vencimientos próximos</Text>
+        ) : (
+          [...dataVencimientos]
+            .filter((v) => v.diasRestantes >= 0 && v.diasRestantes <= 60)
+            .sort((a, b) => a.diasRestantes - b.diasRestantes)
+            .slice(0, 5)
+            .map((item) => (
+              <View key={item.id} style={styles.vencimientoItem}>
+                <View style={{ flex: 1 }}>
+                  <Text style={styles.vencimientoNombre}>{item.nombre}</Text>
+                  <Text style={styles.vencimientoFecha}>Vence: {item.fecha}</Text>
+                </View>
+                <Text
+                  style={[
+                    styles.vencimientoDias,
+                    item.diasRestantes <= 7
+                      ? styles.vencimientoUrgente
+                      : item.diasRestantes <= 30
+                      ? styles.vencimientoProximo
+                      : styles.vencimientoOk,
+                  ]}
+                >
+                  {item.diasRestantes} días
+                </Text>
               </View>
-              <Text
-                style={[
-                  styles.vencimientoDias,
-                  item.diasRestantes <= 7
-                    ? styles.vencimientoUrgente
-                    : item.diasRestantes <= 30
-                    ? styles.vencimientoProximo
-                    : styles.vencimientoOk,
-                ]}
-              >
-                {item.diasRestantes} días
-              </Text>
-            </View>
-          ))}
+            ))
+        )}
       </View>
 
       {/* Alertas Activas */}

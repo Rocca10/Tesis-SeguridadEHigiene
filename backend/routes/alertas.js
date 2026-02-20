@@ -5,44 +5,58 @@ const { authRequired, requirePermission } = require("../middlewares/auth");
 
 router.use(authRequired);
 
-// GET
+// GET - ver
 router.get("/", requirePermission("ver"), (req, res) => {
-  db.all("SELECT * FROM alertas ORDER BY fecha DESC", [], (err, rows) => {
+  db.all("SELECT * FROM alertas ORDER BY id DESC", [], (err, rows) => {
     if (err) return res.status(500).json({ error: err.message });
     res.json(rows);
   });
 });
 
-// POST
+// POST - crear
 router.post("/", requirePermission("crear"), (req, res) => {
-  const { tipo, mensaje, fecha } = req.body;
+  const { tipo, mensaje, icono, color } = req.body;
 
   db.run(
-    "INSERT INTO alertas (tipo, mensaje, fecha) VALUES (?, ?, ?)",
-    [tipo, mensaje, fecha],
+    "INSERT INTO alertas (tipo, mensaje, icono, color) VALUES (?, ?, ?, ?)",
+    [tipo, mensaje, icono, color],
     function (err) {
       if (err) return res.status(500).json({ error: err.message });
-      res.json({ id: this.lastID, tipo, mensaje, fecha });
+
+      res.json({
+        id: this.lastID,
+        tipo,
+        mensaje,
+        icono,
+        color,
+      });
     }
   );
 });
 
-// PUT
+// PUT - editar
 router.put("/:id", requirePermission("editar"), (req, res) => {
   const { id } = req.params;
-  const { tipo, mensaje, fecha } = req.body;
+  const { tipo, mensaje, icono, color } = req.body;
 
   db.run(
-    "UPDATE alertas SET tipo = ?, mensaje = ?, fecha = ? WHERE id = ?",
-    [tipo, mensaje, fecha, id],
+    "UPDATE alertas SET tipo = ?, mensaje = ?, icono = ?, color = ? WHERE id = ?",
+    [tipo, mensaje, icono, color, id],
     function (err) {
       if (err) return res.status(500).json({ error: err.message });
-      res.json({ id, tipo, mensaje, fecha });
+
+      res.json({
+        id,
+        tipo,
+        mensaje,
+        icono,
+        color,
+      });
     }
   );
 });
 
-// DELETE
+// DELETE - eliminar
 router.delete("/:id", requirePermission("eliminar"), (req, res) => {
   const { id } = req.params;
 

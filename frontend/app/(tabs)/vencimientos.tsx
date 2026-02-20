@@ -17,8 +17,6 @@ import { crearVencimiento, getVencimientos, getMatafuegos } from "../../services
 import { useUserRole } from "../../security/useUserRole";
 import { canUserPerform } from "../../security/permissions";
 
-// Importamos la función de eliminar del archivo api.ts
-// Si no existe, la agregamos más abajo
 const eliminarVencimiento = async (id: number) => {
   const token = await SecureStore.getItemAsync("token");
   const res = await fetch(`http://10.0.2.2:5000/api/vencimientos/${id}`, {

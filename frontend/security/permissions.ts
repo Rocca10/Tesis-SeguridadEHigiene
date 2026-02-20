@@ -3,8 +3,8 @@ export type Action = "ver" | "crear" | "editar" | "eliminar" | "exportar" | "imp
 
 export const PERMISOS: Record<Rol, Record<Action, boolean>> = {
   ADMIN:    { ver: true, crear: true, editar: true, eliminar: true, exportar: true,  importar: true },
-  TECNICO:  { ver: true, crear: true, editar: false, eliminar: false, exportar: false, importar: false },
-  OPERADOR: { ver: true, crear: false, editar: false, eliminar: false, exportar: false, importar: false },
+  TECNICO:  { ver: true, crear: true, editar: false, eliminar: false, exportar: true, importar: true },
+  OPERADOR: { ver: true, crear: false, editar: false, eliminar: false, exportar: true, importar: true },
 };
 
 export function canUserPerform(rol: Rol, action: Action) {

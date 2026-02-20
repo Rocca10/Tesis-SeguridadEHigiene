@@ -15,6 +15,7 @@ const vencimientosRoutes = require("./routes/vencimientos");
 const botiquinesRoutes = require("./routes/botiquines");
 const senializacionRoutes = require("./routes/senializacion");
 const authRoutes = require("./routes/auth");
+const dbBackupRoutes = require("./routes/dbBackup");
 
 
 // 🧭 Registrar rutas
@@ -24,6 +25,7 @@ app.use("/api/vencimientos", vencimientosRoutes);
 app.use("/api/botiquines", botiquinesRoutes);
 app.use("/api/senializacion", senializacionRoutes);
 app.use("/auth", authRoutes);
+app.use("/db", dbBackupRoutes);
 
 // 🚀 Iniciar servidor
 const PORT = 5000;

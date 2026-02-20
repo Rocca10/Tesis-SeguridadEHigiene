@@ -1,62 +1,49 @@
 const express = require("express");
 const router = express.Router();
 const db = require("../database/connection");
-const { authRequired, requireRole } = require("../middlewares/auth");
+const { authRequired, requirePermission } = require("../middlewares/auth");
 
-// 🔒 Todo lo de señalización requiere estar logueado
 router.use(authRequired);
 
-// 📍 GET: obtener toda la señalización (ADMIN / TECNICO / OPERADOR)
-router.get("/", (req, res) => {
+// GET - ver
+router.get("/", requirePermission("ver"), (req, res) => {
   db.all("SELECT * FROM senializacion ORDER BY piso ASC", [], (err, rows) => {
     if (err) return res.status(500).json({ error: err.message });
     res.json(rows);
   });
 });
 
-// 📍 POST: crear señalización (solo ADMIN / TECNICO)
-router.post("/", requireRole("ADMIN", "TECNICO"), (req, res) => {
-  const { piso, tipo, fechaRevision } = req.body;
+// POST - crear
+router.post("/", requirePermission("crear"), (req, res) => {
+  const { piso, tipo, ubicacion, estado, fechaVencimiento } = req.body;
 
   db.run(
-    "INSERT INTO senializacion (piso, tipo, fechaRevision) VALUES (?, ?, ?)",
-    [piso, tipo, fechaRevision],
+    "INSERT INTO senializacion (piso, tipo, ubicacion, estado, fechaVencimiento) VALUES (?, ?, ?, ?, ?)",
+    [piso, tipo, ubicacion, estado, fechaVencimiento],
     function (err) {
       if (err) return res.status(500).json({ error: err.message });
-
-      res.json({
-        id: this.lastID,
-        piso,
-        tipo,
-        fechaRevision,
-      });
+      res.json({ id: this.lastID, piso, tipo, ubicacion, estado, fechaVencimiento });
     }
   );
 });
 
-// 📍 PUT: editar señalización (solo ADMIN / TECNICO)
-router.put("/:id", requireRole("ADMIN", "TECNICO"), (req, res) => {
+// PUT - editar
+router.put("/:id", requirePermission("editar"), (req, res) => {
   const { id } = req.params;
-  const { piso, tipo, fechaRevision } = req.body;
+  const { piso, tipo, ubicacion, estado, fechaVencimiento } = req.body;
 
   db.run(
-    "UPDATE senializacion SET piso = ?, tipo = ?, fechaRevision = ? WHERE id = ?",
-    [piso, tipo, fechaRevision, id],
+    "UPDATE senializacion SET piso = ?, tipo = ?, ubicacion = ?, estado = ?, fechaVencimiento = ? WHERE id = ?",
+    [piso, tipo, ubicacion, estado, fechaVencimiento, id],
     function (err) {
       if (err) return res.status(500).json({ error: err.message });
-
-      res.json({
-        id,
-        piso,
-        tipo,
-        fechaRevision,
-      });
+      res.json({ id, piso, tipo, ubicacion, estado, fechaVencimiento });
     }
   );
 });
 
-// 📍 DELETE: eliminar señalización (solo ADMIN)
-router.delete("/:id", requireRole("ADMIN"), (req, res) => {
+// DELETE - eliminar
+router.delete("/:id", requirePermission("eliminar"), (req, res) => {
   const { id } = req.params;
 
   db.run("DELETE FROM senializacion WHERE id = ?", [id], function (err) {

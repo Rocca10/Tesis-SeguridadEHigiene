@@ -18,6 +18,8 @@ import {
   editarBotiquin,
   eliminarBotiquin,
 } from "../services/api";
+import { useUserRole } from "../security/useUserRole";
+import { canUserPerform } from "../security/permissions";
 
 type Botiquin = {
   id: number;
@@ -44,6 +46,7 @@ export default function BotiquinesScreen() {
   const [data, setData] = useState<Botiquin[]>([]);
   const [elementosSeleccionados, setElementosSeleccionados] = useState<string[]>([]);
   const [elementosEditSeleccionados, setElementosEditSeleccionados] = useState<string[]>([]);
+  const rol = useUserRole();
 
   const [nuevo, setNuevo] = useState({
     piso: "",
@@ -168,15 +171,21 @@ export default function BotiquinesScreen() {
             <Text style={styles.cardFecha}>Revisión: {item.fechaRevision}</Text>
 
             <View style={styles.cardButtons}>
-              <Button title="✏️ Editar" color="#FB8C00" onPress={() => empezarEdicion(item)} />
-              <Button title="🗑️ Eliminar" color="#E53935" onPress={() => handleEliminar(item.id)} />
+              {canUserPerform(rol, "editar") && (
+                <Button title="✏️ Editar" color="#FB8C00" onPress={() => empezarEdicion(item)} />
+              )}
+
+              {canUserPerform(rol, "eliminar") && (
+                <Button title="🗑️ Eliminar" color="#E53935" onPress={() => handleEliminar(item.id)} />
+              )}
             </View>
           </View>
         ))}
 
         {/* FORMULARIO DE ALTA */}
-        <View style={styles.form}>
-          <Text style={styles.formTitle}>Agregar nuevo botiquín</Text>
+        {canUserPerform(rol, "crear") && (
+          <View style={styles.form}>
+            <Text style={styles.formTitle}>Agregar nuevo botiquín</Text>
 
           <TextInput
             placeholder="Piso"
@@ -219,6 +228,7 @@ export default function BotiquinesScreen() {
 
           <Button title="➕ Agregar" onPress={handleAgregar} />
         </View>
+        )}
       </ScrollView>
 
       {/* MODAL DE EDICIÓN */}

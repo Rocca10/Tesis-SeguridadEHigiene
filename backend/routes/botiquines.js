@@ -1,21 +1,20 @@
 const express = require("express");
 const router = express.Router();
 const db = require("../database/connection");
-const { authRequired, requireRole } = require("../middlewares/auth");
+const { authRequired, requirePermission } = require("../middlewares/auth");
 
-// 🔒 Todo lo de botiquines requiere estar logueado
 router.use(authRequired);
 
-// 📍 GET: obtener todos los botiquines (ADMIN / TECNICO / OPERADOR)
-router.get("/", (req, res) => {
+// GET - ver
+router.get("/", requirePermission("ver"), (req, res) => {
   db.all("SELECT * FROM botiquines ORDER BY piso ASC", [], (err, rows) => {
     if (err) return res.status(500).json({ error: err.message });
     res.json(rows);
   });
 });
 
-// 📍 POST: crear nuevo botiquín (solo ADMIN / TECNICO)
-router.post("/", requireRole("ADMIN", "TECNICO"), (req, res) => {
+// POST - crear
+router.post("/", requirePermission("crear"), (req, res) => {
   const { piso, responsable, elementos, fechaRevision } = req.body;
 
   db.run(
@@ -35,8 +34,8 @@ router.post("/", requireRole("ADMIN", "TECNICO"), (req, res) => {
   );
 });
 
-// 📍 PUT: editar botiquín (solo ADMIN / TECNICO)
-router.put("/:id", requireRole("ADMIN", "TECNICO"), (req, res) => {
+// PUT - editar
+router.put("/:id", requirePermission("editar"), (req, res) => {
   const { id } = req.params;
   const { piso, responsable, elementos, fechaRevision } = req.body;
 
@@ -57,8 +56,8 @@ router.put("/:id", requireRole("ADMIN", "TECNICO"), (req, res) => {
   );
 });
 
-// 📍 DELETE: eliminar botiquín (solo ADMIN)
-router.delete("/:id", requireRole("ADMIN"), (req, res) => {
+// DELETE - eliminar
+router.delete("/:id", requirePermission("eliminar"), (req, res) => {
   const { id } = req.params;
 
   db.run("DELETE FROM botiquines WHERE id = ?", [id], function (err) {

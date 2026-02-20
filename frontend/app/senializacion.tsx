@@ -18,6 +18,8 @@ import {
   editarSenializacion,
   eliminarSenializacion,
 } from "../services/api";
+import { useUserRole } from "../security/useUserRole";
+import { canUserPerform } from '../security/permissions';
 
 type Senializacion = {
   id: number;
@@ -40,6 +42,7 @@ export default function SenializacionScreen() {
     tipo: "",
     fechaRevision: "",
   });
+  const rol = useUserRole();
 
   // Cargar datos al iniciar
   useEffect(() => {
@@ -131,23 +134,21 @@ export default function SenializacionScreen() {
             </Text>
 
             <View style={styles.cardButtons}>
-              <Button
-                title="✏️ Editar"
-                color="#1E88E5"
-                onPress={() => empezarEdicion(item)}
-              />
-              <Button
-                title="🗑️ Eliminar"
-                color="#E53935"
-                onPress={() => handleEliminar(item.id)}
-              />
+              {canUserPerform(rol, "editar") && (
+                <Button title="✏️ Editar" color="#1E88E5" onPress={() => empezarEdicion(item)} />
+              )}
+
+              {canUserPerform(rol, "eliminar") && (
+                <Button title="🗑️ Eliminar" color="#E53935" onPress={() => handleEliminar(item.id)} />
+              )}
             </View>
           </View>
         ))}
 
         {/* Formulario de alta */}
-        <View style={styles.form}>
-          <Text style={styles.formTitle}>Agregar nueva señalización</Text>
+        {canUserPerform(rol, "crear") && (
+          <View style={styles.form}>
+            <Text style={styles.formTitle}>Agregar nueva señalización</Text>
 
           <TextInput
             placeholder="Piso"
@@ -170,6 +171,7 @@ export default function SenializacionScreen() {
 
           <Button title="➕ Agregar" onPress={handleAgregar} />
         </View>
+        )}
       </ScrollView>
 
       {/* Modal de edición */}
@@ -200,7 +202,7 @@ export default function SenializacionScreen() {
             />
 
             <View style={styles.modalButtons}>
-                            <TouchableOpacity
+              <TouchableOpacity
                 style={[styles.btn, { backgroundColor: "#E53935" }]}
                 onPress={() => setEditando(null)}
               >

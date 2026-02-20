@@ -16,6 +16,8 @@ import {
 } from "react-native";
 import { getAlertas, crearAlerta } from "../../services/api";
 import * as SecureStore from "expo-secure-store";
+import { useUserRole } from "../../security/useUserRole";
+import { canUserPerform } from "../../security/permissions";
 
 const API_URL = "http://10.0.2.2:5000/api/alertas";
 
@@ -38,6 +40,7 @@ type Alerta = {
 export default function AlertasScreen() {
   const [alertas, setAlertas] = useState<Alerta[]>([]);
   const [loading, setLoading] = useState(true);
+  const rol = useUserRole();
   const [nueva, setNueva] = useState({
     tipo: "",
     mensaje: "",
@@ -51,6 +54,7 @@ export default function AlertasScreen() {
     icono: "",
     color: "#E53935",
   });
+
 
   useEffect(() => {
     cargarAlertas();
@@ -97,7 +101,7 @@ export default function AlertasScreen() {
         onPress: async () => {
           try {
             const token = await SecureStore.getItemAsync("token");
-            await fetch(`${API_URL}/${id}`, { 
+            await fetch(`${API_URL}/${id}`, {
               method: "DELETE",
               headers: {
                 Authorization: `Bearer ${token}`,
@@ -128,7 +132,7 @@ export default function AlertasScreen() {
       const token = await SecureStore.getItemAsync("token");
       await fetch(`${API_URL}/${editando.id}`, {
         method: "PUT",
-        headers: { 
+        headers: {
           "Content-Type": "application/json",
           Authorization: `Bearer ${token}`,
         },
@@ -164,101 +168,58 @@ export default function AlertasScreen() {
       <ScrollView style={styles.container}>
         <Text style={styles.title}>Alertas Activas</Text>
 
-      {alertas.length === 0 ? (
-        <Text style={styles.noAlertas}>No hay alertas registradas.</Text>
-      ) : (
-        alertas.map((a) => (
-          <View key={a.id} style={styles.card}>
-            <View style={styles.row}>
-              <Ionicons
-                name={(a.icono as any) || "alert-circle-outline"}
-                size={24}
-                color={a.color || "#E53935"}
-              />
-              <Text style={[styles.tipo, { color: a.color || "#E53935" }]}>
-                {a.tipo}
-              </Text>
+        {alertas.length === 0 ? (
+          <Text style={styles.noAlertas}>No hay alertas registradas.</Text>
+        ) : (
+          alertas.map((a) => (
+            <View key={a.id} style={styles.card}>
+              <View style={styles.row}>
+                <Ionicons
+                  name={(a.icono as any) || "alert-circle-outline"}
+                  size={24}
+                  color={a.color || "#E53935"}
+                />
+                <Text style={[styles.tipo, { color: a.color || "#E53935" }]}>
+                  {a.tipo}
+                </Text>
+              </View>
+              <Text style={styles.mensaje}>{a.mensaje}</Text>
+              <View style={styles.buttons}>
+                {canUserPerform(rol, "editar") && (
+                  <Button title="✏️ Editar" color="#FB8C00" onPress={() => empezarEdicion(a)} />
+                )}
+
+                {canUserPerform(rol, "eliminar") && (
+                  <Button title="🗑️ Eliminar" color="#E53935" onPress={() => eliminarAlerta(a.id)} />
+                )}
+              </View>
             </View>
-            <Text style={styles.mensaje}>{a.mensaje}</Text>
-            <View style={styles.buttons}>
-              <Button
-                title="✏️ Editar"
-                color="#FB8C00"
-                onPress={() => empezarEdicion(a)}
-              />
-              <Button
-                title="🗑️ Eliminar"
-                color="#E53935"
-                onPress={() => eliminarAlerta(a.id)}
-              />
-            </View>
-          </View>
-        ))
-      )}
+          ))
+        )}
 
-      {/* ➕ Crear nueva alerta */}
-      <View style={styles.form}>
-        <Text style={styles.formTitle}>Agregar nueva alerta</Text>
-
-        <TextInput
-          placeholder="Tipo"
-          style={styles.input}
-          value={nueva.tipo}
-          onChangeText={(t) => setNueva({ ...nueva, tipo: t })}
-        />
-        <TextInput
-          placeholder="Mensaje"
-          style={styles.input}
-          value={nueva.mensaje}
-          onChangeText={(t) => setNueva({ ...nueva, mensaje: t })}
-        />
-
-        <Text style={styles.label}>Color:</Text>
-        <View style={styles.pickerContainer}>
-          <Picker
-            selectedValue={nueva.color}
-            onValueChange={(value) => setNueva({ ...nueva, color: value })}
-          >
-            {COLORES.map((c) => (
-              <Picker.Item
-                key={c.value}
-                label={c.name}
-                value={c.value}
-                color={c.value}
-              />
-            ))}
-          </Picker>
-        </View>
-
-        <Button title="➕ Crear Alerta" onPress={crearAlertaLocal} />
-      </View>
-
-      {/* ✏️ Modal de edición */}
-      <Modal animationType="fade" transparent visible={!!editando}>
-        <View style={styles.modalOverlay}>
-          <View style={styles.modalBox}>
-            <Text style={styles.modalTitle}>Editar Alerta</Text>
+        {/* ➕ Crear nueva alerta */}
+        {canUserPerform(rol, "crear") && (
+          <View style={styles.form}>
+            <Text style={styles.formTitle}>Agregar nueva alerta</Text>
 
             <TextInput
               placeholder="Tipo"
               style={styles.input}
-              value={formEdit.tipo}
-              onChangeText={(t) => setFormEdit({ ...formEdit, tipo: t })}
+              value={nueva.tipo}
+              onChangeText={(t) => setNueva({ ...nueva, tipo: t })}
             />
             <TextInput
               placeholder="Mensaje"
               style={styles.input}
-              value={formEdit.mensaje}
-              onChangeText={(t) => setFormEdit({ ...formEdit, mensaje: t })}
+              value={nueva.mensaje}
+              onChangeText={(t) => setNueva({ ...nueva, mensaje: t })}
             />
 
             <Text style={styles.label}>Color:</Text>
             <View style={styles.pickerContainer}>
               <Picker
-                selectedValue={formEdit.color}
-                onValueChange={(value) =>
-                  setFormEdit({ ...formEdit, color: value })
-                }
+                selectedValue={nueva.color}
+                onValueChange={(value) => setNueva({ ...nueva, color: value })}
               >
                 {COLORES.map((c) => (
                   <Picker.Item
@@ -271,24 +232,65 @@ export default function AlertasScreen() {
               </Picker>
             </View>
 
-            <View style={styles.modalButtons}>
-              <TouchableOpacity
-                style={[styles.btn, { backgroundColor: "#E53935" }]}
-                onPress={() => setEditando(null)}
-              >
-                <Text style={styles.btnText}>Cancelar</Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={[styles.btn, { backgroundColor: "#1E88E5" }]}
-                onPress={guardarEdicion}
-              >
-                <Text style={styles.btnText}>💾 Guardar</Text>
-              </TouchableOpacity>
+            <Button title="➕ Crear Alerta" onPress={crearAlertaLocal} />
+          </View>
+        )}
+        {/* ✏️ Modal de edición */}
+        <Modal animationType="fade" transparent visible={!!editando}>
+          <View style={styles.modalOverlay}>
+            <View style={styles.modalBox}>
+              <Text style={styles.modalTitle}>Editar Alerta</Text>
+
+              <TextInput
+                placeholder="Tipo"
+                style={styles.input}
+                value={formEdit.tipo}
+                onChangeText={(t) => setFormEdit({ ...formEdit, tipo: t })}
+              />
+              <TextInput
+                placeholder="Mensaje"
+                style={styles.input}
+                value={formEdit.mensaje}
+                onChangeText={(t) => setFormEdit({ ...formEdit, mensaje: t })}
+              />
+
+              <Text style={styles.label}>Color:</Text>
+              <View style={styles.pickerContainer}>
+                <Picker
+                  selectedValue={formEdit.color}
+                  onValueChange={(value) =>
+                    setFormEdit({ ...formEdit, color: value })
+                  }
+                >
+                  {COLORES.map((c) => (
+                    <Picker.Item
+                      key={c.value}
+                      label={c.name}
+                      value={c.value}
+                      color={c.value}
+                    />
+                  ))}
+                </Picker>
+              </View>
+
+              <View style={styles.modalButtons}>
+                <TouchableOpacity
+                  style={[styles.btn, { backgroundColor: "#E53935" }]}
+                  onPress={() => setEditando(null)}
+                >
+                  <Text style={styles.btnText}>Cancelar</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={[styles.btn, { backgroundColor: "#1E88E5" }]}
+                  onPress={guardarEdicion}
+                >
+                  <Text style={styles.btnText}>💾 Guardar</Text>
+                </TouchableOpacity>
+              </View>
             </View>
           </View>
-        </View>
-      </Modal>
-    </ScrollView>
+        </Modal>
+      </ScrollView>
     </>
   );
 }

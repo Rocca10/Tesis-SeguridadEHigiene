@@ -14,6 +14,8 @@ import { Ionicons } from "@expo/vector-icons";
 import { Stack, useRouter, useFocusEffect } from "expo-router";
 import * as SecureStore from "expo-secure-store";
 import { crearVencimiento, getVencimientos, getMatafuegos } from "../../services/api";
+import { useUserRole } from "../../security/useUserRole";
+import { canUserPerform } from "../../security/permissions";
 
 // Importamos la función de eliminar del archivo api.ts
 // Si no existe, la agregamos más abajo
@@ -34,6 +36,7 @@ export default function VencimientosScreen() {
   const [vencimientos, setVencimientos] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [nuevo, setNuevo] = useState({ nombre: "", fecha: "" });
+  const rol = useUserRole();
 
   const calcularDiasRestantes = (fecha: string) => {
     try {
@@ -244,7 +247,7 @@ export default function VencimientosScreen() {
               </Text>
 
               {/* Botón eliminar solo si NO es matafuego */}
-              {!v.esMatafuego && (
+              {!v.esMatafuego && canUserPerform(rol, "eliminar") && (
                 <TouchableOpacity
                   style={styles.deleteButton}
                   onPress={() => handleEliminar(v.id, v.esMatafuego)}
@@ -258,11 +261,12 @@ export default function VencimientosScreen() {
         )}
 
         {/* ➕ Formulario para agregar vencimiento */}
-        <View style={styles.form}>
-          <Text style={styles.formTitle}>Agregar nuevo vencimiento</Text>
-          <TextInput
-            placeholder="Nombre (ej: Extintor Piso 1)"
-            style={styles.input}
+        {canUserPerform(rol, "crear") && (
+          <View style={styles.form}>
+            <Text style={styles.formTitle}>Agregar nuevo vencimiento</Text>
+            <TextInput
+              placeholder="Nombre (ej: Extintor Piso 1)"
+              style={styles.input}
             value={nuevo.nombre}
             onChangeText={(t) => setNuevo({ ...nuevo, nombre: t })}
           />
@@ -274,6 +278,7 @@ export default function VencimientosScreen() {
           />
           <Button title="Agregar" onPress={handleAgregar} />
         </View>
+        )}
       </ScrollView>
     </>
   );

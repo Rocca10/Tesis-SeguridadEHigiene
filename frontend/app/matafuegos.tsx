@@ -18,6 +18,8 @@ import {
   editarMatafuego,
   eliminarMatafuego,
 } from "../services/api";
+import { useUserRole } from "../security/useUserRole";
+import { canUserPerform } from "../security/permissions";
 
 type Matafuego = {
   id: number;
@@ -34,6 +36,7 @@ export default function MatafuegosScreen() {
   const [formEdit, setFormEdit] = useState({ piso: "", tipo: "", kilos: "", fechaVencimiento: "" });
   const [showPicker, setShowPicker] = useState(false);
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
+  const rol = useUserRole();
 
   useEffect(() => {
     cargarDatos();
@@ -113,22 +116,51 @@ export default function MatafuegosScreen() {
             <Text style={styles.cardFecha}>Vence: {item.fechaVencimiento}</Text>
 
             <View style={styles.cardButtons}>
-              <Button title="✏️ Editar" color="#FB8C00" onPress={() => empezarEdicion(item)} />
-              <Button title="🗑️ Eliminar" color="#E53935" onPress={() => handleEliminar(item.id)} />
+              {canUserPerform(rol, "editar") && (
+                <Button title="✏️ Editar" color="#FB8C00" onPress={() => empezarEdicion(item)} />
+              )}
+
+              {canUserPerform(rol, "eliminar") && (
+                <Button title="🗑️ Eliminar" color="#E53935" onPress={() => handleEliminar(item.id)} />
+              )}
             </View>
           </View>
         ))}
 
-        {/* Formulario de alta */}
-        <View style={styles.form}>
-          <Text style={styles.formTitle}>Agregar nuevo matafuego</Text>
+        {/* Formulario de alta (solo ADMIN y TECNICO) */}
+        {canUserPerform(rol, "crear") && (
+          <View style={styles.form}>
+            <Text style={styles.formTitle}>Agregar nuevo matafuego</Text>
 
-          <TextInput placeholder="Piso" style={styles.input} value={nuevo.piso} onChangeText={(t) => setNuevo({ ...nuevo, piso: t })} />
-          <TextInput placeholder="Tipo (ABC, AB...)" style={styles.input} value={nuevo.tipo} onChangeText={(t) => setNuevo({ ...nuevo, tipo: t })} />
-          <TextInput placeholder="Kilos" keyboardType="numeric" style={styles.input} value={nuevo.kilos} onChangeText={(t) => setNuevo({ ...nuevo, kilos: t })} />
-          <TextInput placeholder="Fecha de vencimiento (AAAA-MM-DD)" style={styles.input} value={nuevo.fechaVencimiento} onChangeText={(t) => setNuevo({ ...nuevo, fechaVencimiento: t })} />
-          <Button title="➕ Agregar" onPress={handleAgregar} />
-        </View>
+            <TextInput
+              placeholder="Piso"
+              style={styles.input}
+              value={nuevo.piso}
+              onChangeText={(t) => setNuevo({ ...nuevo, piso: t })}
+            />
+            <TextInput
+              placeholder="Tipo (ABC, AB...)"
+              style={styles.input}
+              value={nuevo.tipo}
+              onChangeText={(t) => setNuevo({ ...nuevo, tipo: t })}
+            />
+            <TextInput
+              placeholder="Kilos"
+              keyboardType="numeric"
+              style={styles.input}
+              value={nuevo.kilos}
+              onChangeText={(t) => setNuevo({ ...nuevo, kilos: t })}
+            />
+            <TextInput
+              placeholder="Fecha de vencimiento (AAAA-MM-DD)"
+              style={styles.input}
+              value={nuevo.fechaVencimiento}
+              onChangeText={(t) => setNuevo({ ...nuevo, fechaVencimiento: t })}
+            />
+
+            <Button title="➕ Agregar" onPress={handleAgregar} />
+          </View>
+        )}
       </ScrollView>
 
       {/* 🟦 MODAL DE EDICIÓN */}

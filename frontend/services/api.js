@@ -34,6 +34,52 @@ async function fetchConAuth(path, options = {}) {
 }
 
 // ======================
+// PERMISOS Y USUARIO
+// ======================
+
+// ✅ NUEVO: Obtener usuario actual
+export async function getCurrentUser() {
+  const userStr = await SecureStore.getItemAsync("user");
+  if (!userStr) return null;
+  return JSON.parse(userStr);
+}
+
+// ✅ NUEVO: Verificar si el usuario puede realizar una acción
+export async function canUserDo(action) {
+  const user = await getCurrentUser();
+  if (!user) return false;
+
+  const PERMISOS = {
+    ADMIN: {
+      crear: true,
+      editar: true,
+      eliminar: true,
+      ver: true,
+      exportar: true,
+      importar: true,
+    },
+    TECNICO: {
+      crear: true,
+      editar: false,
+      eliminar: false,
+      ver: true,
+      exportar: false,
+      importar: false,
+    },
+    OPERADOR: {
+      crear: false,
+      editar: false,
+      eliminar: false,
+      ver: true,
+      exportar: false,
+      importar: false,
+    }
+  };
+
+  return PERMISOS[user.rol]?.[action] || false;
+}
+
+// ======================
 // VENCIMIENTOS
 // ======================
 export function getVencimientos() {

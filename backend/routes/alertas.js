@@ -1,50 +1,49 @@
 const express = require("express");
 const router = express.Router();
 const db = require("../database/connection");
-const { authRequired, requireRole } = require("../middlewares/auth");
+const { authRequired, requirePermission } = require("../middlewares/auth");
 
-// 🔒 Todo lo de alertas requiere estar logueado
 router.use(authRequired);
 
-// 📍 GET: obtener todas las alertas (ADMIN / TECNICO / OPERADOR)
-router.get("/", (req, res) => {
-  db.all("SELECT * FROM alertas ORDER BY id DESC", [], (err, rows) => {
+// GET
+router.get("/", requirePermission("ver"), (req, res) => {
+  db.all("SELECT * FROM alertas ORDER BY fecha DESC", [], (err, rows) => {
     if (err) return res.status(500).json({ error: err.message });
     res.json(rows);
   });
 });
 
-// 📍 POST: crear alerta (solo ADMIN / TECNICO)
-router.post("/", requireRole("ADMIN", "TECNICO"), (req, res) => {
-  const { tipo, mensaje, icono, color } = req.body;
+// POST
+router.post("/", requirePermission("crear"), (req, res) => {
+  const { tipo, mensaje, fecha } = req.body;
 
   db.run(
-    "INSERT INTO alertas (tipo, mensaje, icono, color) VALUES (?, ?, ?, ?)",
-    [tipo, mensaje, icono, color],
+    "INSERT INTO alertas (tipo, mensaje, fecha) VALUES (?, ?, ?)",
+    [tipo, mensaje, fecha],
     function (err) {
       if (err) return res.status(500).json({ error: err.message });
-      res.json({ id: this.lastID, tipo, mensaje, icono, color });
+      res.json({ id: this.lastID, tipo, mensaje, fecha });
     }
   );
 });
 
-// 📍 PUT: editar alerta (solo ADMIN / TECNICO)
-router.put("/:id", requireRole("ADMIN", "TECNICO"), (req, res) => {
+// PUT
+router.put("/:id", requirePermission("editar"), (req, res) => {
   const { id } = req.params;
-  const { tipo, mensaje, icono, color } = req.body;
+  const { tipo, mensaje, fecha } = req.body;
 
   db.run(
-    "UPDATE alertas SET tipo = ?, mensaje = ?, icono = ?, color = ? WHERE id = ?",
-    [tipo, mensaje, icono, color, id],
+    "UPDATE alertas SET tipo = ?, mensaje = ?, fecha = ? WHERE id = ?",
+    [tipo, mensaje, fecha, id],
     function (err) {
       if (err) return res.status(500).json({ error: err.message });
-      res.json({ id, tipo, mensaje, icono, color });
+      res.json({ id, tipo, mensaje, fecha });
     }
   );
 });
 
-// 📍 DELETE: eliminar alerta (solo ADMIN)
-router.delete("/:id", requireRole("ADMIN"), (req, res) => {
+// DELETE
+router.delete("/:id", requirePermission("eliminar"), (req, res) => {
   const { id } = req.params;
 
   db.run("DELETE FROM alertas WHERE id = ?", [id], function (err) {

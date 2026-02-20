@@ -102,10 +102,20 @@ export default function Login() {
           <Text style={styles.buttonText}>Entrar</Text>
           <Ionicons name="arrow-forward" size={20} color="#fff" />
         </Pressable>
+
+        {/* Link a Registro */}
+        <Pressable 
+          onPress={() => router.push("/register")}
+          style={styles.registerLink}
+        >
+          <Text style={styles.registerText}>
+            ¿No tenés cuenta? <Text style={styles.registerTextBold}>Crear cuenta</Text>
+          </Text>
+        </Pressable>
       </View>
 
       {/* Footer */}
-      <Text style={styles.footer}>© 2026 CFP UTEDYC - ROCCA NICOLAS</Text>
+      <Text style={styles.footer}>© 2025 CFP UTEDYC</Text>
         </ScrollView>
       </TouchableWithoutFeedback>
     </KeyboardAvoidingView>
@@ -213,5 +223,17 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: "#777",
     marginTop: 30,
+  },
+  registerLink: {
+    marginTop: 16,
+    alignItems: "center",
+  },
+  registerText: {
+    fontSize: 14,
+    color: "#666",
+  },
+  registerTextBold: {
+    fontWeight: "bold",
+    color: "#1E88E5",
   },
 });
